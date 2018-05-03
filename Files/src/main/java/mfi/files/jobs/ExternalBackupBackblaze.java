@@ -47,7 +47,6 @@ public class ExternalBackupBackblaze extends Job {
 			HttpClientFactory httpClientFactory = HttpClientFactoryImpl.builder().build();
 			B2StorageClient client = B2StorageHttpClientBuilder.builder(accountid, applicationkey, "Files")
 					.setHttpClientFactory(httpClientFactory).build();
-			// B2Bucket bucket = getBucketById(client, bucketid);
 
 			try {
 
@@ -94,14 +93,5 @@ public class ExternalBackupBackblaze extends Job {
 		}
 		return executor;
 	}
-
-	// private B2Bucket getBucketById(B2StorageClient client, String bucketName) throws B2Exception {
-	// for (B2Bucket bucket : client.buckets()) {
-	// if (bucket.getBucketId().equals(bucketName)) {
-	// return bucket;
-	// }
-	// }
-	// throw new RuntimeException("usageAndExit never returns!");
-	// }
 
 }
