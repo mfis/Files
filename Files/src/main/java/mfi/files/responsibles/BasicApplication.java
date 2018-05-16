@@ -65,32 +65,20 @@ public class BasicApplication extends AbstractResponsible {
 			table.addNewRow();
 			table.addTDSource(new Button("Anmelden", Condition.LOGIN).printForUseInTable(), 1, null);
 			table.addNewRow();
-
 			sb.append(table.buildTable(model));
 
-			try {
-				sb.append("<br/>");
-				String cookies = "";
-				String lang = parameters.get(ServletHelper.SERVLET_ACCEPT_LANG);
-				String res = StringUtils.contains(lang, "de") ? "cookies-de.txt" : "cookies-en.txt";
-				URL url = this.getClass().getClassLoader().getResource(res);
-				URLConnection resConn = url.openConnection();
-				resConn.setUseCaches(false);
-				InputStream in = resConn.getInputStream();
-				StringWriter writer = new StringWriter();
-				IOUtils.copy(in, writer, "UTF-8");
-				cookies = writer.toString();
-				buildTextviewTable(null, sb, model, cookies, false, true, true);
-
-			} catch (IOException e) {
-				logger.error("Error loading Resource cookies.txt: ", e);
-			}
-
-			HTMLTable tableLawLink = new HTMLTable();
-			tableLawLink.addTDLinkExtern("Impressum und Datenschutzerkl&auml;rung",
-					KVMemoryMap.getInstance().readValueFromKey("application.linkToLawSite"), 1, null);
-			tableLawLink.addNewRow();
-			sb.append(tableLawLink.buildTable(model));
+			HTMLTable cookietable = new HTMLTable();
+			cookietable.addTD("Cookie-Information", 1, HTMLTable.TABLE_HEADER);
+			cookietable.addNewRow();
+			String cookietext = "Diese Internetseite verwendet so genannte Cookies. <p> Um mehr zu erfahren, klicken Sie bitte hier:";
+			cookietable.addTD(cookietext, null);
+			cookietable.addNewRow();
+			cookietable.addTD(new Button("Impressum und Datenschutzerkl&auml;rung",
+					KVMemoryMap.getInstance().readValueFromKey("application.linkToLawSite"), true).printForUseInTable(), null);
+			cookietable.addNewRow();
+			cookietable.addTDSource(HTMLUtils.buildCheckBox("Ich bin einverstanden", "COOKIE_OK", false, null), 1, null);
+			cookietable.addNewRow();
+			sb.append(cookietable.buildTable(model));
 
 			model.lookupConversation().setForwardCondition(null);
 			return;
@@ -321,6 +309,13 @@ public class BasicApplication extends AbstractResponsible {
 	public void fjAnmeldung(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
 
 		if (!parameters.containsKey("login_user")) {
+			model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
+			return;
+		}
+
+		if (parameters.get("COOKIE_OK").equals("false")) {
+			model.lookupConversation().getMeldungen()
+					.add("Sie m&uuml;ssen zur Anmeldung zun&auml;chst der Datenschutzerkl&auml;rung zustimmen.");
 			model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
 			return;
 		}
