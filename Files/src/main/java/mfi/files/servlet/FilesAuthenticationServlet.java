@@ -40,6 +40,7 @@ public class FilesAuthenticationServlet extends HttpServlet {
 		String user = StringUtils.trimToEmpty(request.getParameter("user"));
 		String pass = StringUtils.trimToEmpty(request.getParameter("pass"));
 		String getSecretForUser = StringUtils.trimToEmpty(request.getParameter("getSecretForUser"));
+		String application = StringUtils.trimToEmpty(request.getParameter("application"));
 
 		StringBuilder sbLog = new StringBuilder();
 		sbLog.append("request for:" + user + StringUtils.rightPad("", pass.length(), '*') + ": ");
@@ -50,7 +51,7 @@ public class FilesAuthenticationServlet extends HttpServlet {
 		response.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 		response.setHeader("Cache-Control", "no-cache");
 
-		boolean userAuthenticated = checkUser(user, pass);
+		boolean userAuthenticated = checkUser(user, pass, application);
 
 		if (userAuthenticated) {
 			response.setStatus(200); // OK
@@ -75,14 +76,22 @@ public class FilesAuthenticationServlet extends HttpServlet {
 		}
 	}
 
-	private boolean checkUser(String user, String pass) {
+	private boolean checkUser(String user, String pass, String application) {
 
 		if (StringUtils.isBlank(user) || StringUtils.isBlank(pass)) {
 			return false;
 		}
 
 		try {
-			return Security.checkUserCredentials(user, pass);
+			boolean credentialsOk = Security.checkUserCredentials(user, pass);
+
+			if (credentialsOk && StringUtils.isNotBlank(application)) {
+				String allowedApplications = StringUtils
+						.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey("user." + user + ".allowedApplications"));
+				return Arrays.asList(StringUtils.split(allowedApplications, ",")).contains(application);
+			}
+
+			return credentialsOk;
 		} catch (Exception e) {
 			logger.error("Error while Authentication: ", e);
 			return false;
