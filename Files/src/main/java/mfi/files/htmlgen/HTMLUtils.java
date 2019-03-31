@@ -425,8 +425,7 @@ public class HTMLUtils {
 		KVMemoryMap.getInstance().readListWithPartKey("temporary.downloadtoken.");
 		KVMemoryMap.getInstance().writeKeyValue("temporary.downloadtoken." + token + "." + expire, file.getAbsolutePath(), false);
 
-		String url = FilesDownloadServlet.SERVLETPFAD + "?token=" + token + "&" + FilesDownloadServlet.FORCE_DOWNLOAD + "="
-				+ forceDownload;
+		String url = FilesDownloadServlet.SERVLETPFAD + "?token=" + token + "&" + FilesDownloadServlet.FORCE_DOWNLOAD + "=" + forceDownload;
 
 		if (file.isServerCryptedDirectPassword() || file.isServerCryptedHashedPassword()) {
 			url = url + "&" + CONVERSATION + "=" + model.lookupConversation().getConversationID();
@@ -510,12 +509,6 @@ public class HTMLUtils {
 	public static void buildHtmlHeader(StringBuilder out, Model model, String servletpfad, String stringEncoding,
 			Map<String, String> parameters) {
 
-		if (model.isDevelopmentMode()) {
-			// Reload in Development mode, so we can instantly see changes in js and css files
-			StaticResources.getInstance().setDevMode(true);
-			StaticResources.getInstance().load();
-		}
-
 		boolean isAjaxRequest = ServletHelper.lookupIsCurrentRequestTypeAjax(parameters);
 
 		if (!isAjaxRequest) {
@@ -536,7 +529,7 @@ public class HTMLUtils {
 						"<meta name = \"viewport\" id = \"viewport\" content = \"width = device-width, height = device-height, minimum-scale = 1.0 maximum-scale = 1.0\"></meta>\n");
 			}
 
-			out.append("<link rel='stylesheet' type='text/css' href='" + StaticResources.getInstance().get("style.css") + "'></link>\n");
+			out.append("<link rel='stylesheet' type='text/css' href='" + "style.css" + "'></link>\n");
 			out.append("<link rel='icon' href='" + "favicon.ico" + "' type='image/x-icon'></link>\n");
 			out.append("<link rel='shortcut icon' href='" + "favicon.ico" + "'></link>\n");
 
@@ -566,10 +559,9 @@ public class HTMLUtils {
 
 			}
 
-			out.append("<script type='text/javascript' src='" + StaticResources.getInstance().get("crypto-js-aes-v3.1.6.js")
-					+ "'></script>\n");
-			out.append("<script type='text/javascript' src='" + StaticResources.getInstance().get("cryptography-v1.js") + "'></script>\n");
-			out.append("<script type='text/javascript' src='" + StaticResources.getInstance().get("script.js") + "'></script>\n");
+			out.append("<script type='text/javascript' src='" + "crypto-js-aes-v3.1.6.js" + "'></script>\n");
+			out.append("<script type='text/javascript' src='" + "cryptography-v1.js" + "'></script>\n");
+			out.append("<script type='text/javascript' src='" + "script.js" + "'></script>\n");
 			out.append("<title>Files</title>\n");
 			out.append("</head>\n");
 			out.append("<body>");
@@ -623,10 +615,10 @@ public class HTMLUtils {
 				&& !model.lookupConversation().getJavaScriptFilesToEmbed().isEmpty()) {
 			for (String line : model.lookupConversation().getJavaScriptFilesToEmbed()) {
 				if (isAjaxRequest) {
-					String script = "loadJS('" + StaticResources.getInstance().get(line) + "');";
+					String script = "loadJS('" + line + "');";
 					model.lookupConversation().getJavaScriptOnPageLoaded().add(script);
 				} else {
-					out.append("<script type='text/javascript' src='" + StaticResources.getInstance().get(line) + "'></script>\n");
+					out.append("<script type='text/javascript' src='" + line + "'></script>\n");
 				}
 			}
 			model.lookupConversation().getJavaScriptFilesToEmbed().clear();

@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -15,6 +13,8 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.ServletHelper;
 import mfi.files.htmlgen.HTMLUtils;
@@ -22,24 +22,15 @@ import mfi.files.logic.AjaxFillIn;
 import mfi.files.model.Conversation;
 import mfi.files.model.Model;
 
-public class FilesAjaxServlet extends HttpServlet {
+@Controller
+public class FilesAjaxServlet {
 
-	private static final long serialVersionUID = 1L;
 	public static final String SERVLETPFAD = "/" + FilesMainServlet.WEBAPP_NAME + "/FilesAjaxServlet";
 
 	private static Logger logger = LoggerFactory.getLogger(FilesMainServlet.class);
 
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
+	@RequestMapping("/FilesAjaxServlet")
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
 
 		HttpSession session = request.getSession(true);
 		Model model = null;

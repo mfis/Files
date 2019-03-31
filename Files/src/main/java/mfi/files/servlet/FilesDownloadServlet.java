@@ -7,15 +7,15 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.List;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.ServletHelper;
 import mfi.files.helper.ThreadLocalHelper;
@@ -25,34 +25,18 @@ import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Model;
 
-public class FilesDownloadServlet extends HttpServlet {
+@Controller
+public class FilesDownloadServlet {
 
 	private static final long serialVersionUID = 1L;
 	static final int BUFFER_SIZE = 16384;
 	public static final String SERVLETPFAD = "/Files/FilesDownloadServlet";
-	private static Logger logger = LoggerFactory.getLogger(FilesDownloadServlet.class);
+	private static Log logger = LogFactory.getLog(FilesDownloadServlet.class);
 
 	public static String FORCE_DOWNLOAD = "forceDownload";
 
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		try {
-			handleRequest(request, response);
-		} catch (Exception e) {
-			throw new ServletException("Fehler bei Request-Verarbeitung in FilesDownloadServlet:", e);
-		}
-	}
-
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		try {
-			handleRequest(request, response);
-		} catch (Exception e) {
-			throw new ServletException("Fehler bei Request-Verarbeitung in FilesDownloadServlet:", e);
-		}
-	}
-
-	private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	@RequestMapping("/FilesDownloadServlet")
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		try {
 
@@ -182,8 +166,7 @@ public class FilesDownloadServlet extends HttpServlet {
 			suffix = "";
 		} else {
 			len = file.length();
-			suffix = "." + FilesFile.TYPE_SUFFIX_DOWNLOADED_CRYPTO_FILE
-					+ StringUtils.substringAfterLast(file.getName(), ".").toLowerCase();
+			suffix = "." + FilesFile.TYPE_SUFFIX_DOWNLOADED_CRYPTO_FILE + StringUtils.substringAfterLast(file.getName(), ".").toLowerCase();
 		}
 
 		response.setContentLength((int) len);

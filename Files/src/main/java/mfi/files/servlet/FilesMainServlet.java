@@ -7,16 +7,16 @@ import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.CookieHelper;
 import mfi.files.helper.ServletHelper;
@@ -28,10 +28,8 @@ import mfi.files.logic.Security;
 import mfi.files.model.Model;
 import mfi.files.model.RequestValidationException;
 
-/**
- * Servlet implementation class MeinErstesServlet
- */
-public class FilesMainServlet extends HttpServlet {
+@Controller
+public class FilesMainServlet {
 
 	public static final String SESSION_ATTRIBUTE_MODEL = "model";
 	public static final String WEBAPPS_PATH = "/webapps";
@@ -40,24 +38,7 @@ public class FilesMainServlet extends HttpServlet {
 	public static final String WEBAPP_NAME = "Files";
 	public static final String SERVLETPFAD = "/" + WEBAPP_NAME + "/FilesMainServlet";
 
-	private static Logger logger = LoggerFactory.getLogger(FilesMainServlet.class);
-
-	/**
-	 * @see HttpServlet#HttpServlet()
-	 */
-	public FilesMainServlet() {
-		super();
-	}
-
-	@Override
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
-	}
-
-	@Override
-	public void destroy() {
-		super.destroy();
-	}
+	private static Log logger = LogFactory.getLog(FilesMainServlet.class);
 
 	private Model initModel(HttpServletRequest request) throws IOException {
 
@@ -70,15 +51,8 @@ public class FilesMainServlet extends HttpServlet {
 		return model;
 	}
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 */
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		requestVerarbeiten(request, response);
-	}
-
-	private void requestVerarbeiten(HttpServletRequest request, HttpServletResponse response)
+	@RequestMapping("/")
+	public void requestVerarbeiten(HttpServletRequest request, HttpServletResponse response)
 			throws UnsupportedEncodingException, IOException, ServletException {
 
 		StopWatchHelper stopWatch = new StopWatchHelper(this.getClass().getName());
@@ -184,14 +158,6 @@ public class FilesMainServlet extends HttpServlet {
 		HTMLUtils.buildHtmlFooter(sbResponse, model, parameters);
 
 		return sbResponse;
-	}
-
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		requestVerarbeiten(request, response);
 	}
 
 }

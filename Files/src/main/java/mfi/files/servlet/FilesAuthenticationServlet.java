@@ -6,36 +6,28 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.ServletHelper;
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 
-public class FilesAuthenticationServlet extends HttpServlet {
+@Controller
+public class FilesAuthenticationServlet {
 
-	private static Logger logger = LoggerFactory.getLogger(FilesAuthenticationServlet.class);
+	private static Log logger = LogFactory.getLog(FilesAuthenticationServlet.class);
 
 	private static final long serialVersionUID = 1L;
 
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
+	@RequestMapping("/FilesAuthenticationServlet")
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
 
 		String user = StringUtils.trimToEmpty(request.getParameter("user"));
 		String pass = StringUtils.trimToEmpty(request.getParameter("pass"));

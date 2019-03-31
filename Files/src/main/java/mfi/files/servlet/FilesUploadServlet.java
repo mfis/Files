@@ -2,12 +2,9 @@ package mfi.files.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
-import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -16,10 +13,11 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 
-import mfi.files.helper.ServletHelper;
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
@@ -27,24 +25,14 @@ import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Model;
 
-public class FilesUploadServlet extends HttpServlet {
+@Controller
+public class FilesUploadServlet {
 
-	private static Logger logger = LoggerFactory.getLogger(FilesUploadServlet.class);
+	private static Log logger = LogFactory.getLog(FilesUploadServlet.class);
 
 	private static final long serialVersionUID = 1L;
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-		response.setContentType("text/html");
-		response.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
-		response.setHeader("Content-Encoding", "gzip");
-		response.setStatus(500);
-		OutputStream out = new GZIPOutputStream(response.getOutputStream());
-		out.write("Upload nur via POST Request".getBytes(ServletHelper.STRING_ENCODING_UTF8));
-		out.close();
-	}
-
-	@Override
+	@PostMapping("/FilesUploadServlet")
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		HttpSession session = request.getSession(true);
@@ -59,11 +47,6 @@ public class FilesUploadServlet extends HttpServlet {
 			int countFiles = 0;
 			List<FileItem> items = new ServletFileUpload(new DiskFileItemFactory()).parseRequest(request);
 			for (FileItem item : items) {
-				// System.out.println(item.getFieldName() + "--" + item.getName() + "--" + (item.isFormField() ? item.getString() :
-				// "FILE"));
-				// convID--null--1
-				// servercrypted[]--Archiv.zip--FILE
-				// formTerminator--null--true
 				if (item.isFormField()) {
 					formTerminator = true;
 					if (StringUtils.equals(item.getFieldName(), HTMLUtils.CONVERSATION)) {

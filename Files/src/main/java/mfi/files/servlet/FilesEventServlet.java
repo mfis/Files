@@ -7,39 +7,27 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Model;
 
-public class FilesEventServlet extends HttpServlet {
-
-	// private static org.apache.log4j.Logger logger = LoggerFactory.getLogger(FilesEventServlet.class);
+@Controller
+public class FilesEventServlet {
 
 	private static final long serialVersionUID = 1L;
 	public static final String SERVLETPFAD = "/" + FilesMainServlet.WEBAPP_NAME + "/FilesEventServlet";
 
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		handleRequest(request, response);
-	}
-
-	private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
-
-		// logger.info("event");
+	@RequestMapping("/FilesEventServlet")
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
 
 		HttpSession session = request.getSession(true);
 		Model model = null;
@@ -71,8 +59,9 @@ public class FilesEventServlet extends HttpServlet {
 
 		Event event = new Event();
 
-		FilesFile file = (model != null && model.lookupConversation(conversationID).getEditingFile() != null) ? model
-				.lookupConversation(conversationID).getEditingFile() : null;
+		FilesFile file = (model != null && model.lookupConversation(conversationID).getEditingFile() != null)
+				? model.lookupConversation(conversationID).getEditingFile()
+				: null;
 
 		if (file != null) {
 			String dbFileName = file.dateiNameUndPfadEscaped();

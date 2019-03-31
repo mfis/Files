@@ -64,8 +64,6 @@ public class Model {
 		setUser(null);
 		setInitialRequest(true);
 
-		// setIpAddress(request.getRemoteAddr());
-
 		if (request != null) {
 			setHostname(request.getHeader("host"));
 			isClientTouchDevice(request);

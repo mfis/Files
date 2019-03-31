@@ -38,8 +38,6 @@ public class KVMemoryMap {
 
 	private FilesFile dbFilePermanent;
 
-	private FilesFile dbFileTemporary;
-
 	private String passwordForCryptoEntrys = null; // stored crypted here, see setPasswordForCryptoEntrys(...)
 
 	static {
@@ -58,7 +56,6 @@ public class KVMemoryMap {
 		changeSinceLastSave = false;
 		initialized = false;
 		dbFilePermanent = null;
-		dbFileTemporary = null;
 	}
 
 	public boolean isInitialized() {
@@ -98,7 +95,6 @@ public class KVMemoryMap {
 		synchronized (monitor) {
 			kvMap = buildNewMap();
 			changeSinceLastSave = true;
-			// logger.info("flag true durch reset");
 
 		}
 	}
@@ -111,17 +107,15 @@ public class KVMemoryMap {
 		return changeSinceLastSave;
 	}
 
-	public boolean load(FilesFile permanent, FilesFile temporary) throws IOException {
+	public boolean load(FilesFile permanent) throws IOException {
 		synchronized (monitor) {
 			kvMap = buildNewMap();
 			boolean successPerm = loadInternal(permanent);
-			boolean successTemp = loadInternal(temporary);
-			if (successPerm && successTemp) {
+			if (successPerm) {
 				dbFilePermanent = permanent;
-				dbFileTemporary = temporary;
 				initialized = true;
 			}
-			return successPerm && successTemp;
+			return successPerm;
 		}
 	}
 
@@ -189,18 +183,12 @@ public class KVMemoryMap {
 
 	private void saveInternal() throws IOException {
 		List<String> linesToWritePermanent = new LinkedList<String>();
-		List<String> linesToWriteTemporary = new LinkedList<String>();
 		Object[] keys = kvMap.keySet().toArray();
 		for (Object key : keys) {
 			String line = StringUtils.trimToEmpty(((String) key)) + " = " + StringUtils.trimToEmpty(readValueFromKey((String) key));
-			if (StringUtils.startsWithIgnoreCase((String) key, PREFIX_TEMPORARY)) {
-				linesToWriteTemporary.add(line);
-			} else {
-				linesToWritePermanent.add(line);
-			}
+			linesToWritePermanent.add(line);
 		}
 		FileUtils.writeLines(dbFilePermanent, FILE_ENCODING, linesToWritePermanent);
-		FileUtils.writeLines(dbFileTemporary, FILE_ENCODING, linesToWriteTemporary);
 		changeSinceLastSave = false;
 	}
 

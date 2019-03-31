@@ -2,39 +2,36 @@ package mfi.files.listener;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.TimeZone;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import mfi.files.annotation.FilesJob;
 import mfi.files.helper.ApplicationUtil;
-import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.ReflectionHelper;
-import mfi.files.helper.ServletHelper;
-import mfi.files.htmlgen.StaticResources;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.FileMap;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.CronSchedulers;
 import mfi.files.model.Job;
-import mfi.files.servlet.FilesMainServlet;
 
-public class FilesContextListener implements ServletContextListener {
+@Component
+public class FilesContextListener {
 
 	private static Logger logger = LoggerFactory.getLogger(FilesContextListener.class);
 
-	@Override
+	@PreDestroy
 	public void contextDestroyed(ServletContextEvent arg0) {
 
 		CronSchedulers.getInstance().unregisterAndStopAllSchedulers();
@@ -54,16 +51,15 @@ public class FilesContextListener implements ServletContextListener {
 		logger.info("Context destroyed.");
 	}
 
-	@Override
-	public void contextInitialized(ServletContextEvent servletContextEvent) {
+	@PostConstruct
+	public void contextInitialized() {
 
 		logger.info("Context initializing...");
 
 		Properties properties = ApplicationUtil.getApplicationProperties();
 
 		try {
-			KVMemoryMap.getInstance().load(new FilesFile(properties.getProperty("kvMapPerm")),
-					new FilesFile(properties.getProperty("kvMapTemp")));
+			KVMemoryMap.getInstance().load(new FilesFile(properties.getProperty("kvMapPerm")));
 		} catch (IOException e) {
 			logger.error("Error initializing KVMemoryMap", e);
 		}
@@ -96,9 +92,7 @@ public class FilesContextListener implements ServletContextListener {
 
 		startCronJobs();
 
-		lookupEnvironment(servletContextEvent, properties);
-
-		StaticResources.getInstance().load();
+		lookupEnvironment(properties);
 
 		logger.info("Context initialized.");
 	}
@@ -146,33 +140,11 @@ public class FilesContextListener implements ServletContextListener {
 
 	}
 
-	private void lookupEnvironment(ServletContextEvent servletContextEvent, Properties properties) {
+	private void lookupEnvironment(Properties properties) {
 
-		String severName = null;
-		String builddate = null;
-		String warfilename = System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_HOME) + FilesMainServlet.WEBAPPS_PATH + "/"
-				+ FilesMainServlet.WEBAPP_NAME + ".war";
-		FilesFile warfile = new FilesFile(warfilename);
-
-		if (!warfile.exists()) {
-			warfilename = System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_BASE) + FilesMainServlet.WEBAPPS_PATH + "/"
-					+ FilesMainServlet.WEBAPP_NAME + ".war";
-			warfile = new FilesFile(warfilename);
-		}
-
-		if (warfile.exists()) {
-			SimpleDateFormat sdf = Hilfsklasse.lookupSimpleDateFormat("yyyyMMdd_HHmmss");
-			builddate = "war_" + sdf.format(new Date(warfile.lastModified()));
-		} else {
-			warfilename = null;
-			Date startup = new Date();
-			SimpleDateFormat sdf = Hilfsklasse.lookupSimpleDateFormat("yyyyMMdd_HHmmss");
-			builddate = "loc_" + sdf.format(startup);
-		}
-
-		if (servletContextEvent != null && servletContextEvent.getServletContext() != null) {
-			severName = servletContextEvent.getServletContext().getServerInfo();
-		}
+		String severName = "";
+		String builddate = "";
+		String warfilename = "";
 
 		KVMemoryMap.getInstance().writeKeyValue("application.builddate", builddate, true);
 		KVMemoryMap.getInstance().writeKeyValue("application.warfile", warfilename, true);

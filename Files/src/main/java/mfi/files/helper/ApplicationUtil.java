@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Crypto;
 import mfi.files.maps.KVMemoryMap;
-import mfi.files.servlet.FilesMainServlet;
 
 public class ApplicationUtil {
 
@@ -56,23 +55,13 @@ public class ApplicationUtil {
 	public static Properties getApplicationProperties() {
 
 		Properties properties = new Properties();
+		String path = System.getProperty("user.home") + "/documents/config/files.properties";
 
 		try {
-			if (new FilesFile(
-					System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_BASE) + FilesMainServlet.PROPERTIES_PATH).exists()) {
-
-				properties.load(new FileInputStream(
-						System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_BASE) + FilesMainServlet.PROPERTIES_PATH));
-			} else {
-
-				properties.load(new FileInputStream(
-						System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_HOME) + FilesMainServlet.PROPERTIES_PATH));
-			}
-
+			properties.load(new FileInputStream(path));
 			return properties;
 		} catch (Exception e) {
-			logger.error("Properties could not be loaded from " + System.getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_BASE) + " - ",
-					e);
+			logger.error("Properties could not be loaded from " + path + " - ", e);
 			return null;
 		}
 	}
