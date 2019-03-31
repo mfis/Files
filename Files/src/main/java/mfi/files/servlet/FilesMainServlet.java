@@ -32,11 +32,7 @@ import mfi.files.model.RequestValidationException;
 public class FilesMainServlet {
 
 	public static final String SESSION_ATTRIBUTE_MODEL = "model";
-	public static final String WEBAPPS_PATH = "/webapps";
-	public static final String PROPERTIES_PATH = WEBAPPS_PATH + "/webAppProperties/files.properties";
 	public static final long serialVersionUID = 1L;
-	public static final String WEBAPP_NAME = "Files";
-	public static final String SERVLETPFAD = "/" + WEBAPP_NAME + "/FilesMainServlet";
 
 	private static Log logger = LogFactory.getLog(FilesMainServlet.class);
 
@@ -133,7 +129,7 @@ public class FilesMainServlet {
 		try {
 			stopWatch.timePoint(model.isDevelopmentMode(), "header");
 			model.lookupConditionForRequest(parameters.get(HTMLUtils.CONDITION));
-			HTMLUtils.buildHtmlHeader(sbResponse, model, SERVLETPFAD, ServletHelper.STRING_ENCODING_UTF8, parameters);
+			HTMLUtils.buildHtmlHeader(sbResponse, model, "/", ServletHelper.STRING_ENCODING_UTF8, parameters);
 
 			stopWatch.timePoint(model.isDevelopmentMode(), "security");
 			Security.checkSecurityForRequest(model, request, parameters.get(ServletHelper.SERVLET_SESSION_ID), parameters.isEmpty());
@@ -149,7 +145,7 @@ public class FilesMainServlet {
 		} catch (Throwable t) {
 			logger.error("Fehler bei Request-Verarbeitung:", t);
 			sbResponse = new StringBuilder(2000);
-			HTMLUtils.buildHtmlHeader(sbResponse, model, SERVLETPFAD, ServletHelper.STRING_ENCODING_UTF8, parameters);
+			HTMLUtils.buildHtmlHeader(sbResponse, model, "/", ServletHelper.STRING_ENCODING_UTF8, parameters);
 			sbResponse.append(Files.verarbeiteFehler(model));
 			System.gc();
 		}

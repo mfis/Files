@@ -25,7 +25,7 @@ import mfi.files.model.Model;
 @Controller
 public class FilesAjaxServlet {
 
-	public static final String SERVLETPFAD = "/" + FilesMainServlet.WEBAPP_NAME + "/FilesAjaxServlet";
+	public static final String SERVLETPFAD = "/FilesAjaxServlet";
 
 	private static Logger logger = LoggerFactory.getLogger(FilesMainServlet.class);
 

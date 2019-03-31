@@ -111,8 +111,6 @@ public enum Condition {
 
 	DEMO_PAGE(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
 	VIEW_LICENCE_ATTRIBUTION(AllowedFor.ANYBODY, Checks.NONE, Resets.NONE, StepBack.YES), //
-	ENTER_KVDB_PASSWORD(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.YES), //
-	SAVE_KVDB_PASSWORD(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.YES), //
 	//
 
 	;

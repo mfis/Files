@@ -24,7 +24,7 @@ import mfi.files.model.Model;
 public class FilesEventServlet {
 
 	private static final long serialVersionUID = 1L;
-	public static final String SERVLETPFAD = "/" + FilesMainServlet.WEBAPP_NAME + "/FilesEventServlet";
+	public static final String SERVLETPFAD = "/FilesEventServlet";
 
 	@RequestMapping("/FilesEventServlet")
 	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {

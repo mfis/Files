@@ -26,9 +26,11 @@ public class ApplicationUtil {
 		Properties properties = ApplicationUtil.getApplicationProperties();
 
 		for (String name : properties.stringPropertyNames()) {
-			FilesFile file = new FilesFile(properties.getProperty(name));
-			if (!file.isFileWriteableForApplication()) {
-				allOK = false;
+			if (name.startsWith("/")) {
+				FilesFile file = new FilesFile(properties.getProperty(name));
+				if (!file.isFileWriteableForApplication()) {
+					allOK = false;
+				}
 			}
 		}
 

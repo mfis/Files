@@ -30,7 +30,7 @@ public class FilesDownloadServlet {
 
 	private static final long serialVersionUID = 1L;
 	static final int BUFFER_SIZE = 16384;
-	public static final String SERVLETPFAD = "/Files/FilesDownloadServlet";
+	public static final String SERVLETPFAD = "/FilesDownloadServlet";
 	private static Log logger = LogFactory.getLog(FilesDownloadServlet.class);
 
 	public static String FORCE_DOWNLOAD = "forceDownload";

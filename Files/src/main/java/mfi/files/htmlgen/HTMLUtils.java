@@ -16,7 +16,6 @@ import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
 import mfi.files.servlet.FilesDownloadServlet;
-import mfi.files.servlet.FilesMainServlet;
 
 public class HTMLUtils {
 
@@ -136,7 +135,7 @@ public class HTMLUtils {
 		if (model != null && StringUtils.isNotBlank(model.getUser())) {
 			titleBar.getOptions().add(new OptionLink("Menü", menuCondition, "menu"));
 			if (!model.isPhone()) {
-				titleBar.getOptions().add(new OptionLink("Neuer Tab", FilesMainServlet.SERVLETPFAD, "addnew"));
+				titleBar.getOptions().add(new OptionLink("Neuer Tab", "/", "addnew"));
 				titleBar.getOptions().add(new OptionLink(model.getUser(), "", "user"));
 				titleBar.getOptions().add(new OptionLink("Abmelden", Condition.LOGOFF, "exit"));
 				if (!model.isClientTouchDevice()) {

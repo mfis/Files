@@ -116,9 +116,7 @@ public class KVMemoryMapTest extends TestCase {
 		KVMemoryMap.getInstance().reset();
 		FilesFile file1 = FilesFile.createTempFile("kvm11", ".txt");
 		file1.deleteOnExit();
-		FilesFile file2 = FilesFile.createTempFile("kvm12", ".txt");
-		file2.deleteOnExit();
-		KVMemoryMap.getInstance().load(file1, file2);
+		KVMemoryMap.getInstance().load(file1);
 
 		KVMemoryMap.getInstance().writeKeyValue("test.key.a", "valueA", false);
 		KVMemoryMap.getInstance().writeKeyValue("test.key.b", "valueB", false);
@@ -129,7 +127,7 @@ public class KVMemoryMapTest extends TestCase {
 
 		KVMemoryMap.getInstance().reset();
 
-		KVMemoryMap.getInstance().load(file1, file2);
+		KVMemoryMap.getInstance().load(file1);
 		assertTrue(KVMemoryMap.getInstance().countEntries() == 4);
 		assertTrue(KVMemoryMap.getInstance().readValueFromKey("test.key.a").equals("valueA"));
 		assertTrue(KVMemoryMap.getInstance().readValueFromKey("test.key.b").equals("valueB"));
@@ -144,9 +142,7 @@ public class KVMemoryMapTest extends TestCase {
 
 		FilesFile file1 = FilesFile.createTempFile("kvm21", ".txt");
 		file1.deleteOnExit();
-		FilesFile file2 = FilesFile.createTempFile("kvm22", ".txt");
-		file2.deleteOnExit();
-		KVMemoryMap.getInstance().load(file1, file2);
+		KVMemoryMap.getInstance().load(file1);
 
 		KVMemoryMap.getInstance().save();
 

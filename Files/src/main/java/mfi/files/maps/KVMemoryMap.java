@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mfi.files.helper.ApplicationUtil;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Crypto;
 
@@ -38,24 +39,14 @@ public class KVMemoryMap {
 
 	private FilesFile dbFilePermanent;
 
-	private String passwordForCryptoEntrys = null; // stored crypted here, see setPasswordForCryptoEntrys(...)
+	private String passwordForCryptoEntrys;
 
 	static {
 		instance = new KVMemoryMap();
-		// logger.info("initializing KVMemoryMap");
 	}
 
 	private Map<String, String> buildNewMap() {
-		// return Collections.synchronizedMap(new LinkedHashMap<String,
-		// String>(300));
 		return Collections.synchronizedMap(new TreeMap<String, String>());
-	}
-
-	private KVMemoryMap() {
-		kvMap = buildNewMap();
-		changeSinceLastSave = false;
-		initialized = false;
-		dbFilePermanent = null;
 	}
 
 	public boolean isInitialized() {
@@ -115,6 +106,8 @@ public class KVMemoryMap {
 				dbFilePermanent = permanent;
 				initialized = true;
 			}
+			passwordForCryptoEntrys = Crypto.decryptDateiName(ApplicationUtil.getApplicationProperties().getProperty("entries"),
+					readValueFromKey("application.properties.cipherFileNameCryptoKey"), "");
 			return successPerm;
 		}
 	}
@@ -208,9 +201,6 @@ public class KVMemoryMap {
 	public String readValueFromKey(String key) {
 
 		if (StringUtils.startsWith(key, PREFIX_CRYPTO_ENTRY_DEC)) {
-			if (!isPasswordForCryptoEntrysSet()) {
-				throw new IllegalStateException("PasswordForCryptoEntrys is not set.");
-			}
 			String passwordDecrypted = Crypto.decryptDateiName(passwordForCryptoEntrys,
 					readValueFromKeyInternal("application.properties.cipherFileNameCryptoKey"), null);
 			String keyWithoutPrefix = StringUtils.removeStart(key, PREFIX_CRYPTO_ENTRY_DEC);
@@ -355,30 +345,4 @@ public class KVMemoryMap {
 		}
 	}
 
-	public boolean isPasswordForCryptoEntrysSet() {
-		return passwordForCryptoEntrys != null;
-	}
-
-	public boolean setPasswordForCryptoEntrys(String newPassword) {
-
-		Object[] keys = kvMap.keySet().toArray();
-		for (Object key : keys) {
-			if (StringUtils.startsWith((String) key, PREFIX_CRYPTO_ENTRY_ENC)) {
-				String s = StringUtils.removeStart((String) key, KVMemoryMap.PREFIX_CRYPTO_ENTRY_ENC);
-				try {
-					Crypto.decryptDateiName(s, newPassword, null);
-					// no exception, password is ok
-					String newPasswordCrypted = Crypto.encryptDateiName(newPassword,
-							readValueFromKey("application.properties.cipherFileNameCryptoKey"), null);
-					passwordForCryptoEntrys = newPasswordCrypted;
-					return true;
-				} catch (Exception e) {
-					passwordForCryptoEntrys = null;
-					return false;
-				}
-			}
-		}
-		passwordForCryptoEntrys = ""; // DUMMY, IN CASE OF NO CRYPTO ENTRYS
-		return true;
-	}
 }

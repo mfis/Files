@@ -128,16 +128,6 @@ public abstract class Job implements Runnable {
 				}
 			}
 
-			for (Annotation annotation : jobModel.getKey().getDeclaredAnnotations()) {
-				if (annotation instanceof FilesJob) {
-					boolean hasCryptoConfig = ((FilesJob) annotation).hasCryptoConfig();
-					if (hasCryptoConfig && !KVMemoryMap.getInstance().isPasswordForCryptoEntrysSet()) {
-						jobModel.setSkipped(true);
-						return;
-					}
-				}
-			}
-
 			if (!jobModel.isSkipped()) {
 				running.add(jobModel.getKey());
 			}

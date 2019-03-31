@@ -8,7 +8,6 @@ import java.util.TimeZone;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.servlet.ServletContextEvent;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +31,7 @@ public class FilesContextListener {
 	private static Logger logger = LoggerFactory.getLogger(FilesContextListener.class);
 
 	@PreDestroy
-	public void contextDestroyed(ServletContextEvent arg0) {
+	public void contextDestroyed() {
 
 		CronSchedulers.getInstance().unregisterAndStopAllSchedulers();
 
