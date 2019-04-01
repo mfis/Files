@@ -158,7 +158,6 @@ function putStandaloneMarkerToElement() {
 
 function initPushForTextView() {
 	if (typeof (EventSource) !== "undefined") {
-		var dest = '/Files/FilesEventServlet?convID=';
 		dest = dest + document.getElementById('convID').value;
 		eventsource = new EventSource(dest);
 		eventsource.addEventListener('open', function(e) {
@@ -639,7 +638,7 @@ function encryptFileContent() {
 			document.getElementById('filenameForEncrypt').value);
 	formData.append("preventDoubleFilenames", "false");
 	formData.append("formTerminator", "true");
-	client.open("POST", "/Files/FilesUploadServlet");
+	client.open("POST", "/FilesUploadServlet");
 	client.send(formData);
 }
 
@@ -689,7 +688,7 @@ Post.Send = function(form) {
 Post.SendFillIn = function(id) {
 	var query = "id=" + id + "&convID="
 			+ document.getElementById('convID').value + "&type=fillIn";
-	Ajax.Request("POST", "/Files/FilesAjaxServlet", query,
+	Ajax.Request("POST", "/FilesAjaxServlet", query,
 			Post.OnResponseFillIn);
 };
 Post.SendCheckbox = function(text) {
@@ -704,7 +703,7 @@ Post.SendCheckbox = function(text) {
 	var query = "text=" + encodeURIComponent(toSend) + "&textlength="
 			+ toSend.length + "&convID="
 			+ document.getElementById('convID').value + "&type=setCheckbox";
-	Ajax.Request("POST", "/Files/FilesAjaxServlet", query,
+	Ajax.Request("POST", "/FilesAjaxServlet", query,
 			Post.OnResponseCheckbox);
 }
 Post.OnResponse = function(xml, status) {

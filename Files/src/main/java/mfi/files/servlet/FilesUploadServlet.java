@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
@@ -32,7 +32,7 @@ public class FilesUploadServlet {
 
 	private static final long serialVersionUID = 1L;
 
-	@PostMapping("/FilesUploadServlet")
+	@RequestMapping("/FilesUploadServlet/**")
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		HttpSession session = request.getSession(true);

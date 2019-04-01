@@ -246,7 +246,7 @@ function uploadFile() {
 function sendForm() {
 	formData.append("formTerminator", "true");
 	document.getElementById("uploadAbbrechen").style.display = "inline";
-	client.open("POST", "/Files/FilesUploadServlet");
+	client.open("POST", "/FilesUploadServlet");
 	client.send(formData);
 }
 
