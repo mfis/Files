@@ -8,6 +8,13 @@
 		<version>2.1.3.RELEASE</version>
 		<relativePath/>
 	</parent>
+	
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.8</java.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>	
 
 	<groupId>mfi.files</groupId>
 	<artifactId>files</artifactId>
@@ -15,10 +22,6 @@
 	<name>files</name>
 	<url>https://fimatas.de</url>
 	
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>	
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

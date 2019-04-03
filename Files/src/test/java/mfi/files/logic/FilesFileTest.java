@@ -39,6 +39,8 @@ public class FilesFileTest extends TestCase {
 	@Test
 	public void testStringVariousLength() throws IOException {
 
+		KVMemoryMap.getInstance().reset();
+
 		for (int i = 0; i < 500; i = i + 50) {
 			String s = RandomStringUtils.randomAlphanumeric((i * 2000));
 			FilesFile file = FilesFile.createTempFile("test", "test");
@@ -57,6 +59,8 @@ public class FilesFileTest extends TestCase {
 
 	@Test
 	public void testLookupCryptoPathNameForFile() throws IOException {
+
+		KVMemoryMap.getInstance().reset();
 
 		KVMemoryMap.getInstance().writeKeyValue("application.properties.cipherFileNameCryptoKey", "secret", true);
 		KVMemoryMap.getInstance().writeKeyValue("application.properties.cipherFileSuffix", "suffix", true);

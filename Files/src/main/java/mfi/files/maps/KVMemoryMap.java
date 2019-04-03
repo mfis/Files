@@ -98,17 +98,18 @@ public class KVMemoryMap {
 		return changeSinceLastSave;
 	}
 
-	public boolean load(FilesFile permanent) throws IOException {
+	public void load(FilesFile permanent) throws IOException {
 		synchronized (monitor) {
 			kvMap = buildNewMap();
-			boolean successPerm = loadInternal(permanent);
-			if (successPerm) {
-				dbFilePermanent = permanent;
-				initialized = true;
+			loadInternal(permanent);
+			dbFilePermanent = permanent;
+			initialized = true;
+
+			String entries = ApplicationUtil.getApplicationProperties().getProperty("entries");
+			String key = readValueFromKey("application.properties.cipherFileNameCryptoKey");
+			if (entries != null && key != null) {
+				passwordForCryptoEntrys = Crypto.decryptDateiName(entries, key, "");
 			}
-			passwordForCryptoEntrys = Crypto.decryptDateiName(ApplicationUtil.getApplicationProperties().getProperty("entries"),
-					readValueFromKey("application.properties.cipherFileNameCryptoKey"), "");
-			return successPerm;
 		}
 	}
 
@@ -131,15 +132,12 @@ public class KVMemoryMap {
 		}
 	}
 
-	private boolean loadInternal(FilesFile file) throws IOException {
+	private void loadInternal(FilesFile file) throws IOException {
 
-		boolean success = true;
 		List<?> lines = null;
 		try {
 			lines = FileUtils.readLines(file, FILE_ENCODING);
 		} catch (IOException e) {
-			lines = new LinkedList<String>();
-			success = false;
 			throw new IOException("Error loading KVMemoryMap:", e);
 		}
 
@@ -152,7 +150,6 @@ public class KVMemoryMap {
 				kvMap.put(keyValue[0], keyValue[1]);
 			}
 		}
-		return success;
 	}
 
 	public static String[] splitFileFormatLineInKeyValue(String lineString) {
