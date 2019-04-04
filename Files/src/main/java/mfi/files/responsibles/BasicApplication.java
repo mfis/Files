@@ -880,16 +880,9 @@ public class BasicApplication extends AbstractResponsible {
 		table.addTD("freeMemory:", 1, null);
 		table.addTD(DateiZugriff.speicherGroesseFormatieren(Runtime.getRuntime().freeMemory()), 1, null);
 		table.addNewRow();
-		table.addTD("catalina.home:", 1, null);
-		table.addTD(HTMLUtils.spacifyFilePath(System.getProperties().getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_HOME), model), 1,
-				null);
-		table.addNewRow();
 		table.addTD("catalina.base:", 1, null);
 		table.addTD(HTMLUtils.spacifyFilePath(System.getProperties().getProperty(ServletHelper.SYSTEM_PROPERTY_CATALINA_BASE), model), 1,
 				null);
-		table.addNewRow();
-		table.addTD("WarFile:", 1, HTMLTable.NO_BORDER);
-		table.addTD(HTMLUtils.spacifyFilePath(warfilename, model), 1, HTMLTable.NO_BORDER);
 		table.addNewRow();
 
 		if (model.isPhone()) {

@@ -2,6 +2,7 @@ package mfi.files.listener;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -13,6 +14,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Component;
 
 import it.sauronsoftware.cron4j.Scheduler;
@@ -29,6 +32,9 @@ import mfi.files.model.Job;
 public class FilesContextListener {
 
 	private static Logger logger = LoggerFactory.getLogger(FilesContextListener.class);
+
+	@Autowired
+	private BuildProperties buildProperties;
 
 	@PreDestroy
 	public void contextDestroyed() {
@@ -141,8 +147,10 @@ public class FilesContextListener {
 
 	private void lookupEnvironment(Properties properties) {
 
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
 		String severName = "";
-		String builddate = "";
+		String builddate = ""; // formatter.format(buildProperties.getTime());
 		String warfilename = "";
 
 		KVMemoryMap.getInstance().writeKeyValue("application.builddate", builddate, true);
