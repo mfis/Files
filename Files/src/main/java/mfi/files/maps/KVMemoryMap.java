@@ -104,12 +104,7 @@ public class KVMemoryMap {
 			loadInternal(permanent);
 			dbFilePermanent = permanent;
 			initialized = true;
-
-			String entries = ApplicationUtil.getApplicationProperties().getProperty("entries");
-			String key = readValueFromKey("application.properties.cipherFileNameCryptoKey");
-			if (entries != null && key != null) {
-				passwordForCryptoEntrys = Crypto.decryptDateiName(entries, key, "");
-			}
+			passwordForCryptoEntrys = ApplicationUtil.getApplicationProperties().getProperty("entries");
 		}
 	}
 
