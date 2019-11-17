@@ -57,7 +57,7 @@ public class ApplicationUtil {
 	public static Properties getApplicationProperties() {
 
 		Properties properties = new Properties();
-		String path = System.getProperty("user.home") + "/documents/config/files.properties";
+		String path = System.getProperty("user.home") + "/Documents/config/files.properties";
 
 		try {
 			properties.load(new FileInputStream(path));

@@ -73,6 +73,11 @@
 			<version>1.2.0</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+		    <groupId>com.github.sps.pushover.net</groupId>
+			<artifactId>pushover-client</artifactId>
+			<version>1.0.1-SNAPSHOT</version>
+		</dependency>		
 	</dependencies>
 
 	<build>
@@ -112,7 +117,7 @@
 				</executions>
 			</plugin>
 		</plugins>
-		<finalName>Photos</finalName>
+		<finalName>Files</finalName>
 		<pluginManagement>
 			<plugins>
 				<!--This plugin's configuration is used to store Eclipse m2e settings 

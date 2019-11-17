@@ -2,7 +2,6 @@ package mfi.files.listener;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -10,12 +9,9 @@ import java.util.TimeZone;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Component;
 
 import it.sauronsoftware.cron4j.Scheduler;
@@ -27,14 +23,19 @@ import mfi.files.maps.FileMap;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.CronSchedulers;
 import mfi.files.model.Job;
+import net.pushover.client.MessagePriority;
+import net.pushover.client.PushoverClient;
+import net.pushover.client.PushoverException;
+import net.pushover.client.PushoverMessage;
+import net.pushover.client.PushoverRestClient;
+import net.pushover.client.Status;
 
 @Component
 public class FilesContextListener {
 
 	private static Logger logger = LoggerFactory.getLogger(FilesContextListener.class);
 
-	@Autowired
-	private BuildProperties buildProperties;
+	private PushoverClient pushClient;
 
 	@PreDestroy
 	public void contextDestroyed() {
@@ -52,6 +53,8 @@ public class FilesContextListener {
 		} catch (IOException e) {
 			logger.error("Error saving StaticResources", e);
 		}
+
+		sendMessage("Status: Heruntergefahren");
 
 		logger.info("Context destroyed.");
 	}
@@ -99,6 +102,9 @@ public class FilesContextListener {
 
 		lookupEnvironment(properties);
 
+		pushClient = new PushoverRestClient();
+		sendMessage("Status: Hochgefahren");
+
 		logger.info("Context initialized.");
 	}
 
@@ -107,19 +113,10 @@ public class FilesContextListener {
 		try {
 			TimeZone timeZone = TimeZone.getTimeZone(KVMemoryMap.getInstance().readValueFromKey("application.properties.timezone"));
 
-			// Add Plugin-JARs to Classloader
-			Class<?>[] jobClassesPlugin = new Class<?>[0];
-			String pluginPath = StringUtils.trimToNull(KVMemoryMap.getInstance().readValueFromKey("application.properties.jobPlugins"));
-			if (pluginPath != null) {
-				jobClassesPlugin = ReflectionHelper.loadClassesFromJar(pluginPath);
-			}
-
 			// Scan for own Jobs in Webapp
 			Class<?>[] jobClassesInternal = ReflectionHelper.getClassesInPackage("mfi.files.jobs");
 
-			Class<?>[] jobClasses = ArrayUtils.addAll(jobClassesInternal, jobClassesPlugin);
-
-			for (Class<?> clazz : jobClasses) {
+			for (Class<?> clazz : jobClassesInternal) {
 
 				Object instance = clazz.newInstance();
 				if (instance instanceof Job) {
@@ -145,12 +142,41 @@ public class FilesContextListener {
 
 	}
 
+	private void sendMessage(String text) {
+
+		String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
+		String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
+		String clientName = KVMemoryMap.getInstance().readValueFromKey("application.pushService.clientName");
+		String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
+
+		if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
+			return;
+		}
+
+		PushoverMessage message = PushoverMessage.builderWithApiToken(apiToken) //
+				.setUserId(userID) //
+				.setDevice(clientName) //
+				.setMessage(text) //
+				.setPriority(MessagePriority.HIGH) //
+				.setTitle(environmentName + " - Files") //
+				.build();
+
+		Status status = null;
+		try {
+			status = pushClient.pushMessage(message);
+		} catch (PushoverException e) {
+			logger.warn("Could not send push message: " + e);
+		}
+		if (status != null && status.getStatus() > 1) {
+			logger.warn("Could not send push message: " + status.toString());
+		}
+
+	}
+
 	private void lookupEnvironment(Properties properties) {
 
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-
 		String severName = "";
-		String builddate = ""; // formatter.format(buildProperties.getTime());
+		String builddate = "";
 		String warfilename = "";
 
 		KVMemoryMap.getInstance().writeKeyValue("application.builddate", builddate, true);

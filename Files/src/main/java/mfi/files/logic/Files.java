@@ -219,6 +219,9 @@ public class Files {
 			model.lookupConversation().setMeldungen(new LinkedList<String>());
 		}
 
+		if (!KVMemoryMap.getInstance().isPasswordForCryptoEntrysSet() && model.getUser() != null) {
+			sb.insert(posMeldungen, "\n " + setzeKVMapPasswortWarnung(model) + " \n");
+		}
 		if (StringUtils.equalsIgnoreCase(KVMemoryMap.getInstance().readValueFromKey("application.unlimitedStrengthCryptoEnabled"),
 				Boolean.FALSE.toString())) {
 			sb.insert(posMeldungen, "\n " + setzeUnlimitedStrengthCryptoWarnung(model) + " \n");
@@ -233,6 +236,11 @@ public class Files {
 
 	private String setzeUnlimitedStrengthCryptoWarnung(Model model) {
 		return "<div class=\"noticebanner\">" + "Achtung! UnlimitedStrengthCrypto ist nicht aktiv!" + "</div>\n";
+	}
+
+	private String setzeKVMapPasswortWarnung(Model model) {
+		return "<div class=\"noticebanner\">" + HTMLUtils.buildConditionSubmitLink(
+				"Achtung! Applikation wurde nach Neustart nicht vollständig freigeschaltet!", Condition.ENTER_KVDB_PASSWORD) + "</div>\n";
 	}
 
 	private static final void checkEditedFile(Map<String, String> parameters, Model model) {

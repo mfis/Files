@@ -1,20 +1,22 @@
 package mfi.files.helper;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReflectionHelper {
+
+	private ReflectionHelper() {
+		// noop
+	}
+
+	private static Logger logger = LoggerFactory.getLogger(ReflectionHelper.class);
 
 	public static Class<?>[] getClassesInPackage(String packageName) {
 
@@ -56,44 +58,15 @@ public class ReflectionHelper {
 				assert !file.getName().contains(".");
 				classes.addAll(findClasses(file, packageName + "." + file.getName()));
 			} else if (file.getName().endsWith(".class")) {
-				classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+				try {
+					classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+				} catch (NoClassDefFoundError ncdfe) {
+					logger.warn("Class ignored: " + packageName + '.' + file.getName());
+				}
 			}
 		}
 
 		return classes;
-	}
-
-	public static Class<?>[] loadClassesFromJar(String jarfile) throws IOException, ClassNotFoundException {
-
-		URLClassLoader sysloader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
-		Class<?> sysclass = URLClassLoader.class;
-		try {
-			Class<?>[] parameters = new Class[] { URL.class };
-			Method method = sysclass.getDeclaredMethod("addURL", parameters);
-			method.setAccessible(true);
-			method.invoke(sysloader, new Object[] { new File(jarfile).toURI().toURL() });
-		} catch (Throwable t) {
-			throw new IOException("Error, could not add URL to system classloader");
-		}
-
-		JarFile jarFile = new JarFile(jarfile);
-		List<Class<?>> jobClassesPlugin = new LinkedList<Class<?>>();
-
-		final Enumeration<JarEntry> entries = jarFile.entries();
-		while (entries.hasMoreElements()) {
-			final JarEntry entry = entries.nextElement();
-			if (entry.getName().contains(".")) {
-				String name = entry.getName();
-				if (StringUtils.endsWith(name, ".class")) {
-					name = StringUtils.removeEnd(name, ".class");
-					name = StringUtils.replace(name, "/", ".");
-					Class<?> cs = Thread.currentThread().getContextClassLoader().loadClass(name);
-					jobClassesPlugin.add(cs);
-				}
-			}
-		}
-		jarFile.close();
-		return jobClassesPlugin.toArray(new Class<?>[jobClassesPlugin.size()]);
 	}
 
 }

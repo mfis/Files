@@ -33,6 +33,7 @@ import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.CronSchedulers;
 import mfi.files.model.Model;
+import mfi.files.servlet.FilesMainServlet;
 
 public class BasicApplication extends AbstractResponsible {
 
@@ -251,6 +252,36 @@ public class BasicApplication extends AbstractResponsible {
 		}
 
 		model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
+		return;
+	}
+
+	@Responsible(conditions = { Condition.ENTER_KVDB_PASSWORD, Condition.SAVE_KVDB_PASSWORD })
+	public void fjKVDBPasswortSetzen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+
+		if (model.lookupConversation().getCondition() == Condition.ENTER_KVDB_PASSWORD) {
+			sb.append(HTMLUtils.buildMenuNar(model, "Applikation freischalten", true, null, false));
+			HTMLTable table = new HTMLTable();
+			table.addNewRow();
+			table.addTD("Applikations-Passwort: ", 1, null);
+			table.addNewRow();
+			table.addTDSource(HTMLUtils.buildPasswordField("kvdbpass", "", 20, Condition.SAVE_KVDB_PASSWORD, false), 1, null);
+			HTMLUtils.setFocus("kvdbpass", model);
+			table.addNewRow();
+			table.addTDSource(new Button("OK", Condition.SAVE_KVDB_PASSWORD).printForUseInTable(), 1, null);
+			table.addNewRow();
+			sb.append(table.buildTable(model));
+		} else {
+			String pass = StringUtils.trim(parameters.get("kvdbpass"));
+			boolean successful = KVMemoryMap.getInstance().setPasswordForCryptoEntrys(pass);
+			if (successful) {
+				model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
+			} else {
+				model.lookupConversation().getMeldungen().add("Das eingegebene Passwort war nicht korrekt.");
+				Security.addCounterToBlacklist(model.getUser());
+				model.lookupConversation().setForwardCondition(Condition.ENTER_KVDB_PASSWORD);
+			}
+		}
+
 		return;
 	}
 
