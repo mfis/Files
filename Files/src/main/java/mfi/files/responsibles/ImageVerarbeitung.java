@@ -3,6 +3,8 @@ package mfi.files.responsibles;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import mfi.files.annotation.Responsible;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.ButtonBar;
@@ -11,6 +13,7 @@ import mfi.files.io.FilesFile;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
+@Component
 public class ImageVerarbeitung extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.IMAGE_VIEW_WITH_MENU, Condition.IMAGE_VIEW_FULLSCREEN })

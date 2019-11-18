@@ -2,6 +2,8 @@ package mfi.files.responsibles;
 
 import java.nio.charset.StandardCharsets;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -9,11 +11,17 @@ import org.slf4j.LoggerFactory;
 
 import mfi.files.htmlgen.HTMLTable;
 import mfi.files.htmlgen.HTMLUtils;
+import mfi.files.logic.Files;
 import mfi.files.model.Model;
 
 public abstract class AbstractResponsible {
 
 	public static final Logger logger = LoggerFactory.getLogger(AbstractResponsible.class);
+
+	@PostConstruct
+	public void postConstruct() {
+		Files.registrateResponsible(this.getClass());
+	}
 
 	public void buildTextviewTable(String titel, StringBuilder sb, Model model, String inhalt, boolean showNumbers, boolean volleBreite,
 			boolean clearAuswahlListe) {

@@ -3,17 +3,16 @@ package mfi.files.logic;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mfi.files.annotation.Responsible;
-import mfi.files.helper.ReflectionHelper;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.HTMLTable;
 import mfi.files.htmlgen.HTMLUtils;
@@ -25,6 +24,7 @@ import mfi.files.model.Condition.Resets;
 import mfi.files.model.Condition.StepBack;
 import mfi.files.model.Model;
 import mfi.files.model.ResponsibleMethod;
+import mfi.files.responsibles.AbstractResponsible;
 
 public class Files {
 
@@ -36,48 +36,36 @@ public class Files {
 		instance = new Files();
 		logger.info("Initializing Files Singleton");
 		map = new HashMap<Condition, ResponsibleMethod>();
-		lookupAnnotationList();
 	}
 
 	private Files() {
 		// private default constructor
 	}
 
-	private static void lookupAnnotationList() {
+	public static void registrateResponsible(Class<? extends AbstractResponsible> clazz) {
 
 		try {
+			Object instance = clazz.newInstance();
+			Method[] methods = clazz.getDeclaredMethods();
 
-			Class<?>[] responsibleClasses = ReflectionHelper.getClassesInPackage("mfi.files.responsibles");
-
-			for (Class<?> clazz : responsibleClasses) {
-
-				if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isAnonymousClass()) {
-
-					Object instance = clazz.newInstance();
-					Method[] methods = clazz.getDeclaredMethods();
-
-					for (Method method : methods) {
-						Annotation[] annotations = method.getDeclaredAnnotations();
-						for (Annotation annotation : annotations) {
-							if (annotation instanceof Responsible) {
-								Condition[] conditions = ((Responsible) annotation).conditions();
-								for (Condition condition : conditions) {
-									if (map.containsKey(condition)) {
-										throw new RuntimeException("Doppelter Responsible Eintrag: " + condition.toString());
-									} else {
-										map.put(condition, new ResponsibleMethod(instance, method));
-									}
-								}
+			for (Method method : methods) {
+				Annotation[] annotations = method.getDeclaredAnnotations();
+				for (Annotation annotation : annotations) {
+					if (annotation instanceof Responsible) {
+						Condition[] conditions = ((Responsible) annotation).conditions();
+						for (Condition condition : conditions) {
+							if (map.containsKey(condition)) {
+								throw new RuntimeException("Doppelter Responsible Eintrag: " + condition.toString());
+							} else {
+								map.put(condition, new ResponsibleMethod(instance, method));
 							}
 						}
 					}
 				}
 			}
-
 		} catch (Exception e) {
 			throw new RuntimeException("Responsible Liste konnte nicht erstellt werden.", e);
 		}
-
 	}
 
 	public static Files getInstance() {
@@ -101,8 +89,15 @@ public class Files {
 				conditionNachbereiten(model);
 
 			} else {
-				throw new RuntimeException(
-						"Responsible Methode nicht gefunden fuer: " + model.lookupConversation().getCondition().toString());
+				StringBuilder s = new StringBuilder();
+				for (Entry<Condition, ResponsibleMethod> e : map.entrySet()) {
+					s.append("\n\tEntry: ");
+					s.append(e.getKey().name());
+					s.append(" / ");
+					s.append(e.getValue().getClass().getSimpleName());
+				}
+				throw new IllegalStateException("Responsible Methode nicht gefunden fuer: "
+						+ model.lookupConversation().getCondition().toString() + ". Mapping: " + s.toString());
 			}
 
 			if (model.lookupConversation().getCondition() != null

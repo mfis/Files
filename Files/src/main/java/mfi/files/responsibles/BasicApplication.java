@@ -15,6 +15,7 @@ import javax.servlet.http.Cookie;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import mfi.files.annotation.Responsible;
@@ -33,8 +34,8 @@ import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.CronSchedulers;
 import mfi.files.model.Model;
-import mfi.files.servlet.FilesMainServlet;
 
+@Component
 public class BasicApplication extends AbstractResponsible {
 
 	private static final String USERNAME_PATTERN = "[^a-zA-Z0-9_-]";

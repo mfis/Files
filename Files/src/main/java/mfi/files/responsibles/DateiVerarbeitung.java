@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.ServletHelper;
@@ -21,6 +22,7 @@ import mfi.files.logic.Security;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
+@Component
 public class DateiVerarbeitung extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.FS_VIEW_OPTIONS })
@@ -202,8 +204,8 @@ public class DateiVerarbeitung extends AbstractResponsible {
 	@Responsible(conditions = { Condition.FS_FILE_ENCRYPT_CLIENT_END })
 	public void fjVerschluesselnClientEnde(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
 
-		FilesFile cryptoFileNameForFile = FilesFile.lookupClientCryptoFileNameForFile(
-				new FilesFile(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext()));
+		FilesFile cryptoFileNameForFile = FilesFile
+				.lookupClientCryptoFileNameForFile(new FilesFile(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext()));
 
 		if (cryptoFileNameForFile.exists()) {
 			new FilesFile(model.lookupConversation().getEditingFile().getAbsolutePath()).delete();
@@ -346,8 +348,7 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			return;
 		}
 
-		FilesFile newFile = new FilesFile(
-				model.lookupConversation().getEditingFile().getParent() + FilesFile.separator + dateiname);
+		FilesFile newFile = new FilesFile(model.lookupConversation().getEditingFile().getParent() + FilesFile.separator + dateiname);
 		// Condition forward = model.lookupConversation().getEditingFile().isRenameableWithNewName(newFile,
 		// Condition.PASSWORD_ASK_ENCRYPT_SERVER, Condition.PASSWORD_ASK_DECRYPT_SERVER);
 		// if (forward != null) {
@@ -536,8 +537,7 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		}
 	}
 
-	private void fileSystemObject(Model model, boolean details, HTMLTable table, int j, int rowID, boolean isUebersicht,
-			FilesFile file) {
+	private void fileSystemObject(Model model, boolean details, HTMLTable table, int j, int rowID, boolean isUebersicht, FilesFile file) {
 
 		List<String> iconList = new LinkedList<String>();
 		String cssClass = rowID % 2 != 0 ? HTMLTable.TABLE_TOP : HTMLTable.TABLE_ALT_TOP;

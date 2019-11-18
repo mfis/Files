@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.Hilfsklasse;
@@ -26,6 +27,7 @@ import mfi.files.model.Model;
 import mfi.files.model.TextFileMetaTag;
 import mfi.files.model.TextFileMetaTagName;
 
+@Component
 public class TextVerarbeitung extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.FS_PUSH_TEXTVIEW })

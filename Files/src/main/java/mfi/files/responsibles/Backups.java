@@ -3,6 +3,8 @@ package mfi.files.responsibles;
 import java.util.Collection;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import mfi.files.annotation.Responsible;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.ButtonBar;
@@ -14,6 +16,7 @@ import mfi.files.logic.DateiZugriff;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
+@Component
 public class Backups extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.BACKUPS_START, Condition.BACKUP_MAKE_FULLBACKUP })

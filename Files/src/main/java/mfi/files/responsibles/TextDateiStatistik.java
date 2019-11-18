@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.Hilfsklasse;
@@ -23,6 +24,7 @@ import mfi.files.model.SplittedLineGroups;
 import mfi.files.model.TextFileMetaTag;
 import mfi.files.model.TextFileMetaTagName;
 
+@Component
 public class TextDateiStatistik extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.TXT_STATISTIC_MENU })

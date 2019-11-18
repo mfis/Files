@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.Hilfsklasse;
@@ -23,6 +24,7 @@ import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
+@Component
 public class KVDBEditor extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.KVDB_EDIT_START, Condition.KVDB_EDIT, Condition.KVDB_DELETE, Condition.KVDB_INSERT,
