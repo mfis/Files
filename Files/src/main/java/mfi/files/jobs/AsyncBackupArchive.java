@@ -4,11 +4,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.stereotype.Component;
+
 import mfi.files.annotation.FilesJob;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "3,13,23,33,43,53 * * * *", failureCountUntilStartLogging = 2, hasCryptoConfig = false)
 public class AsyncBackupArchive extends Job {
 

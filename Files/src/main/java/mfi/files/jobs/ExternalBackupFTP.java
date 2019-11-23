@@ -3,6 +3,7 @@ package mfi.files.jobs;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.FilesJob;
 import mfi.files.helper.ExternalBackupHelper;
@@ -11,6 +12,7 @@ import mfi.files.io.SFTPClient;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "* * * * *", failureCountUntilStartLogging = 2, hasCryptoConfig = true)
 public class ExternalBackupFTP extends Job {
 

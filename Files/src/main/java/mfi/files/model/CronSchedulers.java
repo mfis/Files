@@ -1,6 +1,8 @@
 package mfi.files.model;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import it.sauronsoftware.cron4j.Scheduler;
@@ -12,6 +14,8 @@ public class CronSchedulers {
 
 	private static CronSchedulers instance = null;
 
+	private final Set<Class<? extends Job>> jobs;
+
 	private final Map<String, Scheduler> schedulers;
 	private final Map<String, String> schedulersIDs;
 	private final Map<String, Job> schedulersInstances;
@@ -20,6 +24,7 @@ public class CronSchedulers {
 		schedulers = new ConcurrentHashMap<String, Scheduler>();
 		schedulersIDs = new ConcurrentHashMap<String, String>();
 		schedulersInstances = new ConcurrentHashMap<String, Job>();
+		jobs = new HashSet<>();
 	}
 
 	public static CronSchedulers getInstance() {
@@ -87,6 +92,10 @@ public class CronSchedulers {
 
 	public Map<String, Job> getSchedulersInstances() {
 		return schedulersInstances;
+	}
+
+	public Set<Class<? extends Job>> getJobs() {
+		return jobs;
 	}
 
 }

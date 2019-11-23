@@ -7,12 +7,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.FilesJob;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "35 2 * * *", failureCountUntilStartLogging = 0, hasCryptoConfig = false)
 public class TempDirCleanUp extends Job {
 

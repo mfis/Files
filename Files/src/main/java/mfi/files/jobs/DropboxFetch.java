@@ -16,6 +16,7 @@ import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+// @Component
 // @FilesJob(cron = "0 6,8,10,12,14,16,18,20,22 * * *", failureCountUntilStartLogging = 2, hasCryptoConfig = true)
 public class DropboxFetch extends Job {
 

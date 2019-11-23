@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import com.backblaze.b2.client.B2ListFilesIterable;
 import com.backblaze.b2.client.B2StorageClient;
@@ -24,6 +25,7 @@ import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "* * * * *", failureCountUntilStartLogging = 2, hasCryptoConfig = true)
 public class ExternalBackupBackblaze extends Job {
 

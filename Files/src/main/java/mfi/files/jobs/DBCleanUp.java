@@ -3,6 +3,8 @@ package mfi.files.jobs;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.springframework.stereotype.Component;
+
 import mfi.files.annotation.FilesJob;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.DateiBackup;
@@ -10,6 +12,7 @@ import mfi.files.maps.FileMap;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "20 0 * * *", failureCountUntilStartLogging = 1, hasCryptoConfig = false)
 public class DBCleanUp extends Job {
 

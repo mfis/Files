@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,11 @@ public abstract class Job implements Runnable {
 		lastrun = Collections.synchronizedMap((new HashMap<Class<? extends Job>, Long>())); // entry always, value last run
 		failurecount = Collections.synchronizedMap((new HashMap<Class<? extends Job>, Integer>())); // entry always, regular value 0
 		suspended = Collections.synchronizedMap((new HashMap<Class<? extends Job>, Long>())); // entry only when suspended
+	}
+
+	@PostConstruct
+	public void postConstruct() {
+		CronSchedulers.getInstance().getJobs().add(this.getClass());
 	}
 
 	public final String status() {

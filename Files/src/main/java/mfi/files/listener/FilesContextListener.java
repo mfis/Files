@@ -12,12 +12,13 @@ import javax.annotation.PreDestroy;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import mfi.files.annotation.FilesJob;
 import mfi.files.helper.ApplicationUtil;
-import mfi.files.helper.ReflectionHelper;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.FileMap;
 import mfi.files.maps.KVMemoryMap;
@@ -98,8 +99,6 @@ public class FilesContextListener {
 		ApplicationUtil.checkUnlimitedStrengthCryptoIsEnabled();
 		ApplicationUtil.storeUptime();
 
-		startCronJobs();
-
 		lookupEnvironment(properties);
 
 		pushClient = new PushoverRestClient();
@@ -108,15 +107,17 @@ public class FilesContextListener {
 		logger.info("Context initialized.");
 	}
 
+	@EventListener(ApplicationReadyEvent.class)
+	public void doSomethingAfterStartup() {
+		startCronJobs();
+	}
+
 	private void startCronJobs() {
 
 		try {
 			TimeZone timeZone = TimeZone.getTimeZone(KVMemoryMap.getInstance().readValueFromKey("application.properties.timezone"));
 
-			// Scan for own Jobs in Webapp
-			Class<?>[] jobClassesInternal = ReflectionHelper.getClassesInPackage("mfi.files.jobs");
-
-			for (Class<?> clazz : jobClassesInternal) {
+			for (Class<? extends Job> clazz : CronSchedulers.getInstance().getJobs()) {
 
 				Object instance = clazz.newInstance();
 				if (instance instanceof Job) {

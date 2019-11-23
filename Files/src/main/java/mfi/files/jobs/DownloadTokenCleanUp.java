@@ -3,11 +3,14 @@ package mfi.files.jobs;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.springframework.stereotype.Component;
+
 import mfi.files.annotation.FilesJob;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Job;
 
+@Component
 @FilesJob(cron = "4,14,24,34,44,54 5-23 * * *", failureCountUntilStartLogging = 2, hasCryptoConfig = false)
 public class DownloadTokenCleanUp extends Job {
 
