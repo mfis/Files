@@ -278,7 +278,7 @@ public class BasicApplication extends AbstractResponsible {
 				model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
 			} else {
 				model.lookupConversation().getMeldungen().add("Das eingegebene Passwort war nicht korrekt.");
-				Security.addCounterToBlacklist(model.getUser());
+				Security.addCounter(model.getUser());
 				model.lookupConversation().setForwardCondition(Condition.ENTER_KVDB_PASSWORD);
 			}
 		}
@@ -545,7 +545,7 @@ public class BasicApplication extends AbstractResponsible {
 			} else {
 				// Zurueck zur Eingabe
 				model.lookupConversation().getMeldungen().add("Mit dem eingegebenen Passwort konnte die Datei nicht entschlüsselt werden.");
-				Security.addCounterToBlacklist(model.getUser());
+				Security.addCounter(model.getUser());
 				model.lookupConversation().setForwardCondition(Condition.PASSWORD_ASK_DECRYPT_SERVER);
 				return;
 			}
@@ -565,7 +565,7 @@ public class BasicApplication extends AbstractResponsible {
 		if (model.lookupConversation().isOriginalRequestCondition()) {
 			model.lookupConversation().getEditingFile().setClientKnowsPassword(false);
 			model.lookupConversation().getMeldungen().add("Mit dem eingegebenen Passwort konnte die Datei nicht entschlüsselt werden.");
-			Security.addCounterToBlacklist(model.getUser());
+			Security.addCounter(model.getUser());
 		}
 		switch (model.lookupConversation().getCondition()) {
 		case FS_EDIT_FILE_AFTER_RESET_CLIENT_PW:

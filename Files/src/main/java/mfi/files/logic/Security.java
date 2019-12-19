@@ -26,6 +26,7 @@ public class Security {
 	public static final String KVDB_KEY_BLACKLIST = "temporary.day.login.blacklist.";
 	public static final String KVDB_KEY_COOKIES = "temporary.manual.cookies.";
 	public static final String KVDB_KEY_COOKIES_DELIMITER = " <##> ";
+	public static final String BLACKLIST_UNKNOWN_SESSION = "UnknownSession";
 	private static final String COOKIE_ID_PREFIX = "fjc";
 
 	private static Logger getLogger() {
@@ -38,15 +39,20 @@ public class Security {
 		// FIXME: CLEAN-UP THIS METHOD !!
 
 		if (model.isInitialRequest()) {
-			if (request.getParameterMap() != null && request.getParameterMap().size() > 0) {
-				if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY) {
-					model.lookupConversation().getMeldungen()
-							.add("Du bist nicht angemeldet oder hattest einen Session-Timeout. Bitte die Seite neu aufrufen.");
-					// logoffUser(model);
-					model.lookupConversation().setCondition(Condition.NULL);
+			if (request.getParameterMap() != null && request.getParameterMap().size() > 0
+					&& model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY) {
+				model.lookupConversation().getMeldungen()
+						.add("Du bist nicht angemeldet oder hattest einen Session-Timeout. Bitte die Seite neu aufrufen.");
+				model.lookupConversation().setCondition(Condition.NULL);
+				addCounter(BLACKLIST_UNKNOWN_SESSION);
+				if (isBlocked(BLACKLIST_UNKNOWN_SESSION)) {
+					KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+					getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs");
 				}
 			}
-		} else {
+		} else
+
+		{
 			if (model.lookupConversation().getCondition() != null
 					&& (model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ANYBODY)) {
 				// Beim Login darf der User und die Session noch leer sein
@@ -83,7 +89,7 @@ public class Security {
 		}
 
 		if (StringUtils.isNotEmpty(model.getUser())) {
-			if (isBlockeyByBlacklist(model.getUser())) {
+			if (isBlocked(model.getUser())) {
 				getLogger().warn("User " + model.getUser() + " sperren wegen zu hoher Blacklist-Eintraege");
 				logoffUser(model);
 			}
@@ -230,12 +236,12 @@ public class Security {
 	public static void authenticateUser(Model model, String user, String pass, String passHash, Map<String, String> parameters,
 			boolean isReLogin) throws Exception {
 
-		if (isBlockeyByBlacklist(user) || isBlockeyByBlacklist(parameters.get(ServletHelper.SERVLET_REMOTE_IP))) {
+		if (isBlocked(user) || isBlocked(parameters.get(ServletHelper.SERVLET_REMOTE_IP))) {
 			logoffUser(model);
 			getLogger().warn(
 					"Ungueltiger Anmeldeversuch wegen Blacklisting mit " + user + " / " + parameters.get(ServletHelper.SERVLET_REMOTE_IP));
-			addCounterToBlacklist(user);
-			addCounterToBlacklist(parameters.get(ServletHelper.SERVLET_REMOTE_IP));
+			addCounter(user);
+			addCounter(parameters.get(ServletHelper.SERVLET_REMOTE_IP));
 			model.lookupConversation().getMeldungen().add("Wer bist Du denn?");
 		} else if (!isUserActive(user)) {
 			model.lookupConversation().getMeldungen().add("Der Account ist inaktiv. Bitte den Admin benachrichtigen.");
@@ -254,8 +260,8 @@ public class Security {
 			} else {
 				logoffUser(model);
 				getLogger().warn("Ungueltiger Anmeldeversuch fuer User=" + user);
-				addCounterToBlacklist(user);
-				addCounterToBlacklist(parameters.get(ServletHelper.SERVLET_REMOTE_IP));
+				addCounter(user);
+				addCounter(parameters.get(ServletHelper.SERVLET_REMOTE_IP));
 				model.lookupConversation().getMeldungen().add("Wer bist Du denn?");
 			}
 		}
@@ -263,7 +269,7 @@ public class Security {
 
 	public static boolean checkUserCredentials(String user, String pass) {
 
-		if (isBlockeyByBlacklist(user)) {
+		if (isBlocked(user)) {
 			return false;
 		} else {
 			String passHash = Crypto.encryptLoginCredentials(user, pass);
@@ -271,7 +277,7 @@ public class Security {
 					&& StringUtils.equals(KVMemoryMap.getInstance().readValueFromKey("user." + user + ".pass"), passHash)) {
 				return true;
 			} else {
-				addCounterToBlacklist(user);
+				addCounter(user);
 				return false;
 			}
 		}
@@ -287,7 +293,7 @@ public class Security {
 
 	}
 
-	public static void addCounterToBlacklist(String itemToCount) {
+	public static void addCounter(String itemToCount) {
 
 		String key = KVDB_KEY_BLACKLIST + itemToCount;
 		String value = "1";
@@ -301,7 +307,7 @@ public class Security {
 		getLogger().warn("Schreibe Blacklist fuer " + key + " = " + value);
 	}
 
-	private static boolean isBlockeyByBlacklist(String itemToCheck) {
+	private static boolean isBlocked(String itemToCheck) {
 
 		String key = KVDB_KEY_BLACKLIST + itemToCheck;
 
