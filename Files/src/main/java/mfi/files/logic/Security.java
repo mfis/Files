@@ -42,7 +42,8 @@ public class Security {
 				if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY) {
 					model.lookupConversation().getMeldungen()
 							.add("Du bist nicht angemeldet oder hattest einen Session-Timeout. Bitte die Seite neu aufrufen.");
-					logoffUser(model);
+					// logoffUser(model);
+					model.lookupConversation().setCondition(Condition.NULL);
 				}
 			}
 		} else {
