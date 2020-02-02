@@ -131,8 +131,9 @@ public class HTMLUtils {
 		refresh.setId("refresh");
 		titleBar.getOptions().add(refresh);
 		model.lookupConversation().getJavaScriptOnPageLoaded().add("document.getElementById('refresh').className = '';");
-
-		if (model != null && StringUtils.isNotBlank(model.getUser())) {
+		if (model.isUploadTicket()) {
+			titleBar.getOptions().add(new OptionLink("Abmelden", Condition.LOGOFF, "exit"));
+		} else if (model != null && StringUtils.isNotBlank(model.getUser())) {
 			titleBar.getOptions().add(new OptionLink("Menü", menuCondition, "menu"));
 			if (!model.isPhone()) {
 				titleBar.getOptions().add(new OptionLink("Neuer Tab", "/", "addnew"));

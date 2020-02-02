@@ -12,7 +12,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
+import mfi.files.helper.ServletHelper;
 import mfi.files.helper.ThreadLocalHelper;
+import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.maps.KVMemoryMap;
 
 public class Model {
@@ -46,6 +48,8 @@ public class Model {
 
 	private boolean isBatch;
 
+	private boolean uploadTicket;
+
 	public Model() {
 		istTouchDeviceGeprueft = false;
 		initialRequest = false;
@@ -54,6 +58,7 @@ public class Model {
 		verzeichnisBerechtigungen = new LinkedList<String>();
 		conversations = null;
 		isBatch = false;
+		uploadTicket = false;
 	}
 
 	public void initializeModelOnFirstRequest(HttpServletRequest request) throws IOException {
@@ -132,8 +137,12 @@ public class Model {
 		return conversations.size();
 	}
 
-	public void lookupConditionForRequest(String conditionString) {
-		lookupConversation().lookupConditionForRequest(conditionString, isInitialRequest());
+	public void lookupConditionForRequest(Map<String, String> parameters) {
+		if (parameters.containsKey(ServletHelper.UPLOAD_TICKET_PARAM)) {
+			lookupConversation().lookupConditionForRequest(Condition.FILE_UPLOAD.name(), isInitialRequest());
+		} else {
+			lookupConversation().lookupConditionForRequest(parameters.get(HTMLUtils.CONDITION), isInitialRequest());
+		}
 	}
 
 	public String getHostname() {
@@ -345,6 +354,14 @@ public class Model {
 
 	public void setWebserverRunsBehindSSLReverseProxy(boolean webserverRunsBehindSSLReverseProxy) {
 		this.webserverRunsBehindSSLReverseProxy = webserverRunsBehindSSLReverseProxy;
+	}
+
+	public boolean isUploadTicket() {
+		return uploadTicket;
+	}
+
+	public void setUploadTicket(boolean uploadTicket) {
+		this.uploadTicket = uploadTicket;
 	}
 
 }

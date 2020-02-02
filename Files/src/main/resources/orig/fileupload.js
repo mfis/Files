@@ -19,7 +19,23 @@ function fileChange() {
 				if (size == 0)
 					size = 1;
 				var ul = '';
-				if (isEndToEndCryptable(list[i])) { // end-to-end
+				if (document.getElementById("noEncryptionLabel") !== null) {
+					if (document.getElementById("lifileListNOE") == null) {
+						var newLI = document.createElement("LI");
+						var newA = document.createElement("A");
+						var newText = document
+								.createTextNode('Dateien:');
+						newLI.appendChild(newA);
+						var newUL = document.createElement("UL");
+						newUL.id = 'ulfileListNOE';
+						newLI.appendChild(newUL);
+						newA.appendChild(newText);
+						newLI.id = "lifileListNOE";
+						document.getElementById("fileList").appendChild(newLI);
+					}
+					ul = 'ulfileListNOE';
+					idToAdd = 'lifileListNOE';					
+				}else if (isEndToEndCryptable(list[i])) { // end-to-end
 					if (document.getElementById("lifileListE2E") == null) {
 						var newLI = document.createElement("LI");
 						var newA = document.createElement("A");
@@ -176,6 +192,7 @@ function uploadFile() {
 	if (list && list.length > 0) {
 
 		formData.append("convID", document.getElementById('convID').value);
+		formData.append("uploadcaption", document.getElementById('uploadcaption').value);
 		if (hasServerCryptedFiles) {
 			formData
 					.append(

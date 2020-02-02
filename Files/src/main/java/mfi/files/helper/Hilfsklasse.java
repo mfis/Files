@@ -25,6 +25,8 @@ public class Hilfsklasse {
 
 	public final static String DATE_PATTERN_TS = "dd.MM.yyyy HH:mm:ss";
 
+	public final static String DATE_PATTERN_TS_FILESYSTEM = "yyyy_MM_dd__HH_mm_ss";
+
 	private static DecimalFormat frmt = (DecimalFormat) NumberFormat.getInstance(Locale.GERMAN);
 
 	static {
@@ -46,6 +48,12 @@ public class Hilfsklasse {
 	public static String zeitstempelAlsString() {
 
 		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS);
+		return sdf.format(new Date());
+	}
+
+	public static String zeitstempelAlsDateisystemObjekt() {
+
+		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS_FILESYSTEM);
 		return sdf.format(new Date());
 	}
 

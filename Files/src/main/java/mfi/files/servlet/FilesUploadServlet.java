@@ -1,8 +1,10 @@
 package mfi.files.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -12,12 +14,16 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import mfi.files.helper.Hilfsklasse;
+import mfi.files.helper.ServletHelper;
+import mfi.files.helper.StringHelper;
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
@@ -43,17 +49,22 @@ public class FilesUploadServlet {
 		boolean formTerminator = false;
 		boolean convIdIsSet = false;
 		String password = null;
+		String uploadCaption = null;
 		try {
 			int countFiles = 0;
 			List<FileItem> items = new ServletFileUpload(new DiskFileItemFactory()).parseRequest(request);
 			for (FileItem item : items) {
 				if (item.isFormField()) {
 					formTerminator = true;
+					if (StringUtils.equals(item.getFieldName(), "uploadcaption")) {
+						uploadCaption = item.getString();
+					}
 					if (StringUtils.equals(item.getFieldName(), HTMLUtils.CONVERSATION)) {
 						convIdIsSet = true;
 						ThreadLocalHelper.setConversationID(item.getString());
 						ThreadLocalHelper.setModelPassword(Security.generateModelPasswordForSession(model));
-						Security.checkSecurityForRequest(model, request, session.getId(), false);
+						Map<String, String> parameters = ServletHelper.parseRequest(request, session);
+						Security.checkSecurityForRequest(model, parameters);
 					}
 					if (StringUtils.equals(item.getFieldName(), "hashedPassword")) {
 						password = item.getString();
@@ -68,7 +79,7 @@ public class FilesUploadServlet {
 					countFiles++;
 					String fileName = item.getName();
 					InputStream content = item.getInputStream();
-					processUpload(item.getFieldName().equals("endtoendcrypted[]"), content, fileName,
+					processUpload(item.getFieldName().equals("endtoendcrypted[]"), content, fileName, uploadCaption,
 							item.getFieldName().equals("servercrypted[]") ? password : null, model, response);
 				}
 			}
@@ -95,7 +106,7 @@ public class FilesUploadServlet {
 			logger.error("File Upload failed (" + convStat + "/" + fileStat + "):", e);
 		} finally {
 			try {
-				if (model != null && convIdIsSet) {
+				if (model != null && convIdIsSet && model.lookupConversation().getEditingFile() != null) {
 					if (model.lookupConversation().getEditingFile().isPasswordPending()) {
 						model.lookupConversation().getEditingFile().forgetPasswords();
 					}
@@ -109,15 +120,23 @@ public class FilesUploadServlet {
 
 	}
 
-	private void processUpload(boolean clientCrypto, InputStream inputStream, String fileName, String password, Model model,
+	private void processUpload(boolean clientCrypto, InputStream inputStream, String fileName, String caption, String password, Model model,
 			HttpServletResponse response) throws IOException {
 
 		String dir;
-		if (model.lookupConversation().getEditingFile().isDirectory()) {
+		if (model.lookupConversation().getEditingFile() == null) {
+			dir = model.lookupConversation().getVerzeichnis() + FilesFile.separator;
+		} else if (model.lookupConversation().getEditingFile().isDirectory()) {
 			dir = model.lookupConversation().getEditingFile().getAbsolutePath() + FilesFile.separator;
 		} else {
 			dir = model.lookupConversation().getEditingFile().getParent() + FilesFile.separator;
 		}
+
+		if (model.isUploadTicket()) {
+			dir = dir + Hilfsklasse.zeitstempelAlsDateisystemObjekt() + "_" + StringHelper.idFromName(caption) + FilesFile.separator;
+		}
+
+		FileUtils.forceMkdir(new File(dir));
 
 		FilesFile newBaseFile = new FilesFile(dir + fileName);
 		FilesFile newFile = null;
@@ -159,8 +178,6 @@ public class FilesUploadServlet {
 			newFile = newFile.clientseitigeVerschluesselungNachbereiten(null);
 		} else if (newFile.isPasswordPending()) {
 			newFile = newFile.verschluesseleDateiServerseitigHashedPassword(); // hier IMMER HashedPassword
-		} else {
-
 		}
 
 		try {

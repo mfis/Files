@@ -128,11 +128,11 @@ public class FilesMainServlet {
 
 		try {
 			stopWatch.timePoint(model.isDevelopmentMode(), "header");
-			model.lookupConditionForRequest(parameters.get(HTMLUtils.CONDITION));
+			model.lookupConditionForRequest(parameters);
 			HTMLUtils.buildHtmlHeader(sbResponse, model, "/", ServletHelper.STRING_ENCODING_UTF8, parameters);
 
 			stopWatch.timePoint(model.isDevelopmentMode(), "security");
-			Security.checkSecurityForRequest(model, request, parameters.get(ServletHelper.SERVLET_SESSION_ID), parameters.isEmpty());
+			Security.checkSecurityForRequest(model, parameters);
 			model.lookupConversation().setCookiesReadFromRequestConvenient(request.getCookies());
 			Security.cookieRead(model, parameters);
 			ThreadLocalHelper.setModelPassword(Security.generateModelPasswordForSession(model));

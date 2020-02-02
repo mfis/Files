@@ -2,11 +2,13 @@ package mfi.files.logic;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.StringUtils;
@@ -34,13 +36,42 @@ public class Security {
 		return logger;
 	}
 
-	public static void checkSecurityForRequest(Model model, HttpServletRequest request, String sid, boolean emptyParameters) {
+	public static void checkSecurityForRequest(Model model, Map<String, String> parameters) {
+
+		String sid = parameters.get(ServletHelper.SERVLET_SESSION_ID);
+		boolean emptyParameters = parameters.isEmpty();
 
 		// FIXME: CLEAN-UP THIS METHOD !!
 
 		if (model.isInitialRequest()) {
-			if (request.getParameterMap() != null && request.getParameterMap().size() > 0
-					&& model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY) {
+
+			if (model.lookupConversation().getCondition() == Condition.FILE_UPLOAD
+					&& parameters.containsKey(ServletHelper.UPLOAD_TICKET_PARAM)
+					&& StringUtils.isNotBlank(parameters.get(ServletHelper.UPLOAD_TICKET_PARAM))) {
+				boolean ticketOkay = false;
+				String ticket = parameters.get(ServletHelper.UPLOAD_TICKET_PARAM);
+				if (KVMemoryMap.getInstance().containsKey(ServletHelper.UPLOAD_TICKET_PARAM + "." + ticket)) {
+					String user = KVMemoryMap.getInstance().readValueFromKey(ServletHelper.UPLOAD_TICKET_PARAM + "." + ticket);
+					if (StringUtils.isNotBlank(user)) {
+						ticketOkay = authenticateUser(model, user, null,
+								KVMemoryMap.getInstance().readValueFromKey("user." + user + ".pass"), parameters, true);
+					}
+				}
+				if (ticketOkay) {
+					model.setUploadTicket(true);
+				} else {
+					List<String[]> ticketEntries = KVMemoryMap.getInstance().readListWithPartKey(ServletHelper.UPLOAD_TICKET_PARAM + ".");
+					Set<String> blacklisted = new HashSet<>();
+					for (String[] ticketEntry : ticketEntries) {
+						String ticketUser = ticketEntry[1];
+						if (!blacklisted.contains(ticketUser)) {
+							addCounter(ticketUser);
+							blacklisted.add(ticketUser);
+						}
+					}
+				}
+
+			} else if (!emptyParameters && model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY) {
 				model.lookupConversation().getMeldungen()
 						.add("Du bist nicht angemeldet oder hattest einen Session-Timeout. Bitte die Seite neu aufrufen.");
 				model.lookupConversation().setCondition(Condition.NULL);
@@ -50,9 +81,7 @@ public class Security {
 					getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs");
 				}
 			}
-		} else
-
-		{
+		} else {
 			if (model.lookupConversation().getCondition() != null
 					&& (model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ANYBODY)) {
 				// Beim Login darf der User und die Session noch leer sein
@@ -72,13 +101,6 @@ public class Security {
 			}
 		}
 
-		if (!model.isDevelopmentMode() && !isSSLVerbindung(request) && !model.isWebserverRunsBehindSSLReverseProxy()) {
-			model.lookupConversation().getMeldungen().add("ACHTUNG: Unverschlüsselte Verbindung!");
-			if (model.lookupConversation().getCondition() != null) {
-				model.lookupConversation().setCondition(Condition.SSL_NOTICE);
-			}
-		}
-
 		if (model.getConversationCount() > 100) {
 			throw new SecurityException("Hohe Anzahl Conversations. DOS-Angriff?");
 		}
@@ -93,6 +115,13 @@ public class Security {
 				getLogger().warn("User " + model.getUser() + " sperren wegen zu hoher Blacklist-Eintraege");
 				logoffUser(model);
 			}
+		}
+
+		if (model.isUploadTicket() && model.lookupConversation().getCondition() != null
+				&& model.lookupConversation().getCondition() != Condition.FILE_UPLOAD
+				&& model.lookupConversation().getCondition() != Condition.LOGOFF) {
+			model.lookupConversation().setCondition(Condition.FILE_UPLOAD);
+			model.lookupConversation().getMeldungen().add("Mit diesem Anmeldungs-Ticket ist nur der Datei-Upload erlaubt.");
 		}
 
 		if (model.lookupConversation().getCondition() != null) {
@@ -164,7 +193,7 @@ public class Security {
 		}
 	}
 
-	private static void cookieWrite(Model model) throws Exception {
+	private static void cookieWrite(Model model) {
 
 		if (!model.isInitialRequest() && model.lookupConversation().getCondition().equals(Condition.LOGIN)) {
 			// db: cookieID / user
@@ -217,24 +246,8 @@ public class Security {
 		model.setLoginCookieID(null);
 	}
 
-	public static boolean isSSLVerbindung(HttpServletRequest request) {
-
-		if (request.getAttributeNames() != null) {
-			if (StringUtils.isNotEmpty((String) request.getAttribute("javax.servlet.request.ssl_session"))) {
-				return true;
-			}
-			if (StringUtils.isNotEmpty((String) request.getAttribute("javax.servlet.request.cipher_suite"))) {
-				return true;
-			}
-		}
-		if (StringUtils.endsWith(request.getHeader("host"), ":8443")) {
-			return true;
-		}
-		return false;
-	}
-
-	public static void authenticateUser(Model model, String user, String pass, String passHash, Map<String, String> parameters,
-			boolean isReLogin) throws Exception {
+	public static boolean authenticateUser(Model model, String user, String pass, String passHash, Map<String, String> parameters,
+			boolean isReLogin) {
 
 		if (isBlocked(user) || isBlocked(parameters.get(ServletHelper.SERVLET_REMOTE_IP))) {
 			logoffUser(model);
@@ -254,9 +267,7 @@ public class Security {
 				model.setUser(user);
 				model.setSessionID(parameters.get(ServletHelper.SERVLET_SESSION_ID));
 				cookieWrite(model);
-				// if (!isReLogin) {
-				// getLogger().info("Erfolgreiches Login fuer: " + user);
-				// }
+				return true;
 			} else {
 				logoffUser(model);
 				getLogger().warn("Ungueltiger Anmeldeversuch fuer User=" + user);
@@ -265,6 +276,7 @@ public class Security {
 				model.lookupConversation().getMeldungen().add("Wer bist Du denn?");
 			}
 		}
+		return false;
 	}
 
 	public static boolean checkUserCredentials(String user, String pass) {

@@ -35,6 +35,7 @@ public class ServletHelper {
 	public static final char REQUEST_TYPE_AJAX = 'a';
 	public static final int HTTP_STATUS_CODE_NON_AUTHORITATIVE_RESPONSE = 203;
 	public static final String NON_BREAKING_SPACE = "\u00A0";
+	public static final String UPLOAD_TICKET_PARAM = "uploadTicket";
 
 	public static boolean isLocalNetworkClient(Map<String, String> parameters) {
 		if (parameters.get(SERVLET_REMOTE_IP).equals("0:0:0:0:0:0:0:1")) {
