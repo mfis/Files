@@ -183,11 +183,14 @@ public class BasicApplication extends AbstractResponsible {
 		table.addNewRow();
 		table.addTDSource(HTMLUtils.buildPasswordField("pw_change_new_pass2", "", 20, Condition.LOGIN_CHANGE_PASS, true), 1, null);
 		table.addNewRow();
+		table.addTD("PIN (6-stellig numerisch): ", 1, null);
+		table.addNewRow();
+		table.addTDSource(HTMLUtils.buildPasswordField("pw_change_new_pin", "", 6, Condition.LOGIN_CHANGE_PASS, true), 1, null);
+		table.addNewRow();
 		table.addTDSource(new Button("OK", Condition.LOGIN_CHANGE_PASS).printForUseInTable(), 1, null);
 		table.addNewRow();
 		sb.append(table.buildTable(model));
 		model.lookupConversation().setForwardCondition(null);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_CHANGE_PASS })
@@ -197,6 +200,7 @@ public class BasicApplication extends AbstractResponsible {
 		String passOld = StringUtils.trim(parameters.get("pw_change_old_pw"));
 		String passNew1 = StringUtils.trim(parameters.get("pw_change_new_pass1"));
 		String passNew2 = StringUtils.trim(parameters.get("pw_change_new_pass2"));
+		String pin = StringUtils.trim(parameters.get("pw_change_new_pin"));
 
 		if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(passOld) && StringUtils.isNotBlank(passNew1)
 				&& StringUtils.isNotBlank(passNew2)) {
@@ -213,16 +217,26 @@ public class BasicApplication extends AbstractResponsible {
 				return;
 			}
 
-			String hash = Crypto.encryptLoginCredentials(user, passNew1);
-
-			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pass", hash, true);
+			String hashPass = Crypto.encryptLoginCredentials(user, passNew1);
+			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pass", hashPass, true);
 			KVMemoryMap.getInstance().save();
 
+			if (StringUtils.isNotBlank(pin)) {
+				if (pin.length() == 6 && StringUtils.isNumeric(pin)) {
+					String hashPin = Crypto.encryptLoginCredentials(user, pin);
+					KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pin", hashPin, true);
+					KVMemoryMap.getInstance().save();
+					model.lookupConversation().getMeldungen().add("Pin-Änderung erfolgreich.");
+				} else {
+					model.lookupConversation().getMeldungen().add("Pin wurde NICHT geändert - nicht 6-stellig numerisch.");
+				}
+			}
+
 			logger.info("User/Passwort geaendert fuer: " + user);
-			model.lookupConversation().getMeldungen().add("Das Passwort wurde erfolgreich geändert.");
+			model.lookupConversation().getMeldungen().add("Passwort-Änderung erfolgreich.");
 
 		} else if (StringUtils.isNotBlank(user) && StringUtils.isBlank(passOld) && StringUtils.isNotBlank(passNew1)
-				&& StringUtils.isNotBlank(passNew2)) {
+				&& StringUtils.isNotBlank(passNew2) && StringUtils.isBlank(pin)) {
 
 			if (!StringUtils.equals(passNew1, passNew2)) {
 				model.lookupConversation().getMeldungen().add("Die beiden eingegebenen neuen Passwörter sind nicht identisch");
@@ -253,7 +267,6 @@ public class BasicApplication extends AbstractResponsible {
 		}
 
 		model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.ENTER_KVDB_PASSWORD, Condition.SAVE_KVDB_PASSWORD })

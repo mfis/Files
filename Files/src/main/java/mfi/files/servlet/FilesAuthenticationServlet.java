@@ -24,15 +24,16 @@ public class FilesAuthenticationServlet {
 
 	private static Log logger = LogFactory.getLog(FilesAuthenticationServlet.class);
 
-	private static final long serialVersionUID = 1L;
-
 	@RequestMapping("/FilesAuthenticationServlet")
 	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
 
 		String user = StringUtils.trimToEmpty(request.getParameter("user"));
 		String pass = StringUtils.trimToEmpty(request.getParameter("pass"));
+		String pin = StringUtils.trimToEmpty(request.getParameter("pin"));
 		String getSecretForUser = StringUtils.trimToEmpty(request.getParameter("getSecretForUser"));
 		String application = StringUtils.trimToEmpty(request.getParameter("application"));
+
+		boolean isPin = StringUtils.isNotBlank(pin) && StringUtils.isBlank(pass);
 
 		StringBuilder sbLog = new StringBuilder();
 		sbLog.append("request for:" + user + StringUtils.rightPad("", pass.length(), '*') + ": ");
@@ -43,11 +44,16 @@ public class FilesAuthenticationServlet {
 		response.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 		response.setHeader("Cache-Control", "no-cache");
 
-		boolean userAuthenticated = checkUser(user, pass, application);
+		boolean userAuthenticated;
+		if (isPin) {
+			userAuthenticated = checkPin(user, pin);
+		} else {
+			userAuthenticated = checkPass(user, pass, application);
+		}
 
 		if (userAuthenticated) {
 			response.setStatus(200); // OK
-			if (StringUtils.isNotBlank(getSecretForUser)) {
+			if (!isPin && StringUtils.isNotBlank(getSecretForUser)) {
 				String canReadSecretFor = KVMemoryMap.getInstance().readValueFromKey("user." + user + ".canReadSecretFor");
 				if (StringUtils.isNotBlank(canReadSecretFor)) {
 					List<String> allowedSecrets = Arrays.asList(StringUtils.split(canReadSecretFor, ","));
@@ -68,7 +74,7 @@ public class FilesAuthenticationServlet {
 		}
 	}
 
-	private boolean checkUser(String user, String pass, String application) {
+	private boolean checkPass(String user, String pass, String application) {
 
 		if (StringUtils.isBlank(user) || StringUtils.isBlank(pass)) {
 			return false;
@@ -86,6 +92,20 @@ public class FilesAuthenticationServlet {
 			return credentialsOk;
 		} catch (Exception e) {
 			logger.error("Error while Authentication: ", e);
+			return false;
+		}
+	}
+
+	private boolean checkPin(String user, String pin) {
+
+		if (StringUtils.isBlank(user) || StringUtils.isBlank(pin)) {
+			return false;
+		}
+
+		try {
+			return Security.checkPin(user, pin);
+		} catch (Exception e) {
+			logger.error("Error while PIN check: ", e);
 			return false;
 		}
 	}

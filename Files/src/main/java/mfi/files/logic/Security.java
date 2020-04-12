@@ -285,8 +285,24 @@ public class Security {
 			return false;
 		} else {
 			String passHash = Crypto.encryptLoginCredentials(user, pass);
-			if (KVMemoryMap.getInstance().containsKey("user." + user)
+			if (KVMemoryMap.getInstance().containsKey("user." + user) && KVMemoryMap.getInstance().containsKey("user." + user + ".pass")
 					&& StringUtils.equals(KVMemoryMap.getInstance().readValueFromKey("user." + user + ".pass"), passHash)) {
+				return true;
+			} else {
+				addCounter(user);
+				return false;
+			}
+		}
+	}
+
+	public static boolean checkPin(String user, String pin) {
+
+		if (isBlocked(user)) {
+			return false;
+		} else {
+			String passHash = Crypto.encryptLoginCredentials(user, pin);
+			if (KVMemoryMap.getInstance().containsKey("user." + user) && KVMemoryMap.getInstance().containsKey("user." + user + ".pin")
+					&& StringUtils.equals(KVMemoryMap.getInstance().readValueFromKey("user." + user + ".pin"), passHash)) {
 				return true;
 			} else {
 				addCounter(user);
@@ -392,4 +408,5 @@ public class Security {
 		String b32 = new String(new Base32(0).encode(uuid.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
 		return StringUtils.left(b32, 4).trim();
 	}
+
 }
