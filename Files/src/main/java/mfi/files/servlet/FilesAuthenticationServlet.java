@@ -1,6 +1,5 @@
 package mfi.files.servlet;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -13,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import mfi.files.helper.ServletHelper;
@@ -24,19 +24,42 @@ public class FilesAuthenticationServlet {
 
 	private static Log logger = LogFactory.getLog(FilesAuthenticationServlet.class);
 
+	@PostMapping("/FilesCreateToken")
+	public void createToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+		String user = StringUtils.trimToEmpty(request.getParameter("user"));
+		String pass = StringUtils.trimToEmpty(request.getParameter("pass"));
+		String application = StringUtils.trimToEmpty(request.getParameter("application"));
+		String device = StringUtils.trimToEmpty(request.getParameter("device"));
+
+		if (checkPass(user, pass, application)) {
+			String token = Security.createToken(user, pass, application, device);
+			PrintWriter out = response.getWriter();
+			out.write(token);
+			out.flush();
+		} else {
+			StringBuilder sbLog = new StringBuilder();
+			sbLog.append("FilesCreateToken:" + user + StringUtils.rightPad("", pass.length(), '*') + ": ");
+			sbLog.append(" wrong password! - response 401");
+			logger.info(sbLog.toString());
+			response.setStatus(401); // Unauthorized
+		}
+
+	}
+
 	@RequestMapping("/FilesAuthenticationServlet")
-	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
 		String user = StringUtils.trimToEmpty(request.getParameter("user"));
 		String pass = StringUtils.trimToEmpty(request.getParameter("pass"));
 		String pin = StringUtils.trimToEmpty(request.getParameter("pin"));
+		String token = StringUtils.trimToEmpty(request.getParameter("token"));
 		String getSecretForUser = StringUtils.trimToEmpty(request.getParameter("getSecretForUser"));
 		String application = StringUtils.trimToEmpty(request.getParameter("application"));
+		String device = StringUtils.trimToEmpty(request.getParameter("device"));
 
 		boolean isPin = StringUtils.isNotBlank(pin) && StringUtils.isBlank(pass);
-
-		StringBuilder sbLog = new StringBuilder();
-		sbLog.append("request for:" + user + StringUtils.rightPad("", pass.length(), '*') + ": ");
+		boolean isToken = StringUtils.isNotBlank(token) && StringUtils.isBlank(pass);
 
 		response.setContentType("text/plain");
 		response.setContentType(ServletHelper.CONTENT_TYPE_HTML);
@@ -47,6 +70,8 @@ public class FilesAuthenticationServlet {
 		boolean userAuthenticated;
 		if (isPin) {
 			userAuthenticated = checkPin(user, pin);
+		} else if (isToken) {
+			userAuthenticated = ckeckToken(user, token, application, device);
 		} else {
 			userAuthenticated = checkPass(user, pass, application);
 		}
@@ -68,6 +93,8 @@ public class FilesAuthenticationServlet {
 				}
 			}
 		} else {
+			StringBuilder sbLog = new StringBuilder();
+			sbLog.append("request for:" + user + StringUtils.rightPad("", pass.length(), '*') + ": ");
 			sbLog.append(" wrong password! - response 401");
 			logger.info(sbLog.toString());
 			response.setStatus(401); // Unauthorized
@@ -104,6 +131,20 @@ public class FilesAuthenticationServlet {
 
 		try {
 			return Security.checkPin(user, pin);
+		} catch (Exception e) {
+			logger.error("Error while PIN check: ", e);
+			return false;
+		}
+	}
+
+	private boolean ckeckToken(String user, String token, String application, String device) {
+
+		if (StringUtils.isBlank(user) || StringUtils.isBlank(token) || StringUtils.isBlank(application) || StringUtils.isBlank(device)) {
+			return false;
+		}
+
+		try {
+			return Security.checkToken(user, token, application, device);
 		} catch (Exception e) {
 			logger.error("Error while PIN check: ", e);
 			return false;
