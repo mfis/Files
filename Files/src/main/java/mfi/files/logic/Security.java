@@ -29,6 +29,7 @@ public class Security {
 	public static final String KVDB_KEY_COOKIES = "temporary.manual.cookies.";
 	public static final String KVDB_KEY_COOKIES_DELIMITER = " <##> ";
 	public static final String BLACKLIST_UNKNOWN_SESSION = "UnknownSession";
+	public static final String BLACKLIST_UNKNOWN_COOKIE = "UnknownCookie";
 	private static final String COOKIE_ID_PREFIX = "fjc";
 
 	private static Logger getLogger() {
@@ -188,6 +189,11 @@ public class Security {
 				} else {
 					getLogger().error("Login-Cookie loeschen, da nicht auf DB gefunden:" + cookieID);
 					cookieDelete(model);
+					addCounter(BLACKLIST_UNKNOWN_COOKIE);
+					if (isBlocked(BLACKLIST_UNKNOWN_COOKIE)) {
+						KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+						getLogger().warn("Loeschen aller Cookies aufgrund moegliches BruteForce Angriffs (2)");
+					}
 				}
 			}
 		}
