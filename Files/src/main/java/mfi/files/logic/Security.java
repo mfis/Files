@@ -11,6 +11,7 @@ import java.util.UUID;
 import javax.servlet.http.Cookie;
 
 import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,7 +205,7 @@ public class Security {
 		if (!model.isInitialRequest() && model.lookupConversation().getCondition().equals(Condition.LOGIN)) {
 			// db: cookieID / user
 			// cookie: cookie_name / uuid
-			String cookieID = COOKIE_ID_PREFIX + UUID.randomUUID().toString();
+			String cookieID = COOKIE_ID_PREFIX + UUID.randomUUID().toString() + "__" + RandomStringUtils.randomAlphanumeric(3500);
 
 			writeCookieIdentifierToKVDB(model, cookieID);
 
