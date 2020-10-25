@@ -224,6 +224,13 @@ public class Crypto {
 		return crypted;
 	}
 
+	public static String encryptLoginToken(String user, String token) {
+		byte[] key256 = passwordTo256bitKey(credentialsFromUserNameAndPasswort(user, token));
+		String crypted = encryptAES(new String(token.getBytes(StandardCharsets.UTF_8), UTF8), key256, true);
+		crypted = StringUtils.remove(crypted, "=");
+		return crypted;
+	}
+
 	public static String hashString(String string) {
 		if (StringUtils.isEmpty(string)) {
 			return "";

@@ -400,8 +400,11 @@ public class Security {
 		device = cleanUpSubKey(device);
 		if (checkUserCredentials(user, pass)) {
 			String uuid = application + "#" + UUID.randomUUID().toString() + "#" + user.hashCode();
-			String token = new String(new Base32(0).encode(uuid.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8).replace("=", "");
-			String encryptedToken = Crypto.encryptLoginCredentials(user, token);
+			String more = new RandomStringGenerator.Builder().withinRange('0', 'z')
+					.filteredBy(CharacterPredicates.LETTERS, CharacterPredicates.DIGITS).build().generate(3600);
+			String token = new String(new Base32(0).encode(uuid.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8).replace("=", "")
+					+ more;
+			String encryptedToken = Crypto.encryptLoginToken(user, token);
 			KVMemoryMap.getInstance().writeKeyValue("user." + user + "." + application + "#" + device + ".token", encryptedToken, true);
 			return token;
 		}
@@ -415,7 +418,7 @@ public class Security {
 		} else {
 			application = cleanUpSubKey(application);
 			device = cleanUpSubKey(device);
-			String encryptedToken = Crypto.encryptLoginCredentials(user, token);
+			String encryptedToken = Crypto.encryptLoginToken(user, token);
 			String key = "user." + user + "." + application.replace('.', '_') + "#" + device + ".token";
 			if (KVMemoryMap.getInstance().containsKey("user." + user) && KVMemoryMap.getInstance().containsKey(key)
 					&& StringUtils.equals(KVMemoryMap.getInstance().readValueFromKey(key), encryptedToken)) {
