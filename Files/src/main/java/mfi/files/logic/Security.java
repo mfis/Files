@@ -2,6 +2,7 @@ package mfi.files.logic;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +26,12 @@ import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.Model;
+import mfi.files.servlet.FilesMainServlet;
 
+/*
+ * UNMAINTAINABLE CLASS - DO NOT EDIT ANYMORE -> REWRITE !!
+ */
+@Deprecated
 public class Security {
 
 	private static final String COOKIE_NAME = "FILESLOGIN";
@@ -32,6 +40,7 @@ public class Security {
 	public static final String KVDB_KEY_COOKIES_DELIMITER = " <##> ";
 	public static final String BLACKLIST_UNKNOWN_SESSION = "UnknownSession";
 	public static final String BLACKLIST_UNKNOWN_COOKIE = "UnknownCookie";
+	public static final String BLACKLIST_SESSION_WITHOUT_LOGIN = "SessionWithoutLogin";
 	private static final String COOKIE_ID_PREFIX = "fjc";
 
 	private static Logger getLogger() {
@@ -43,8 +52,6 @@ public class Security {
 
 		String sid = parameters.get(ServletHelper.SERVLET_SESSION_ID);
 		boolean emptyParameters = parameters.isEmpty();
-
-		// FIXME: CLEAN-UP THIS METHOD !!
 
 		if (model.isInitialRequest()) {
 
@@ -82,6 +89,8 @@ public class Security {
 				if (isBlocked(BLACKLIST_UNKNOWN_SESSION)) {
 					KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
 					getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs");
+					logoffUser(model);
+					resetCounter(BLACKLIST_UNKNOWN_SESSION);
 				}
 			}
 		} else {
@@ -153,23 +162,46 @@ public class Security {
 
 	}
 
-	public static void cookieRead(Model model, Map<String, String> parameters) throws Exception {
+	public static Model lookupModelFromSession(HttpSession session, HttpServletRequest request) {
 
-		if (model.isInitialRequest() && model.lookupConversation().getCondition().equals(Condition.NULL)) {
-			// Check for cookie
-			String cookieID = null;
-			if (model.lookupConversation().getCookiesReadFromRequest() != null) {
-				for (Cookie cookieReadFromRequest : model.lookupConversation().getCookiesReadFromRequest()) {
-					String cookieName = cookieReadFromRequest.getName();
-					if (cookieName.equals(COOKIE_NAME) && StringUtils.startsWith(cookieReadFromRequest.getValue(), COOKIE_ID_PREFIX)) {
-						cookieID = cookieReadFromRequest.getValue();
+		Model model;
+		model = (Model) session.getAttribute(FilesMainServlet.SESSION_ATTRIBUTE_MODEL);
+
+		if (model != null) {
+			String cookieID = lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest());
+			if (StringUtils.isBlank(cookieID)) {
+				if (request.getCookies() != null) {
+					cookieID = lookupLoginCookie(Arrays.asList(request.getCookies()));
+				}
+			}
+			if (StringUtils.isBlank(cookieID)
+					|| StringUtils.isBlank(KVMemoryMap.getInstance().readValueFromKey(KVDB_KEY_COOKIES + cookieID))) {
+				model = null;
+				if (StringUtils.isNotBlank(cookieID)) {
+					addCounter(BLACKLIST_SESSION_WITHOUT_LOGIN);
+					if (isBlocked(BLACKLIST_SESSION_WITHOUT_LOGIN)) {
+						KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+						getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs (3)");
+						resetCounter(BLACKLIST_SESSION_WITHOUT_LOGIN);
 					}
 				}
 			}
-			// getLogger().info("Session-Cookie bei initialRequest:" + cookieID);
+		}
 
-			if (cookieID != null) {
-				if (KVMemoryMap.getInstance().containsKey(KVDB_KEY_COOKIES + cookieID)) {
+		return model;
+	}
+
+	public static void cookieRead(Model model, Map<String, String> parameters) throws Exception {
+
+		boolean init = false;
+		if (model.isInitialRequest() && model.lookupConversation().getCondition().equals(Condition.NULL)) {
+			init = true;
+		}
+		String cookieID = lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest());
+
+		if (cookieID != null) {
+			if (KVMemoryMap.getInstance().containsKey(KVDB_KEY_COOKIES + cookieID)) {
+				if (init) {
 					// Found cookie
 					String userFromCookie = KVMemoryMap.getInstance().readValueFromKey(KVDB_KEY_COOKIES + cookieID);
 					if (StringUtils.contains(userFromCookie, KVDB_KEY_COOKIES_DELIMITER)) {
@@ -182,28 +214,45 @@ public class Security {
 						// forwarding to standard condition
 						model.lookupConversation().setCondition(Condition.AUTOLOGIN_FROM_COOKIE);
 						cookieRenew(model, cookieID);
-						// getLogger().info("Re-Login fuer: " + userFromCookie);
 					} else {
 						KVMemoryMap.getInstance().deleteKey(KVDB_KEY_COOKIES + cookieID);
 						getLogger().error("Re-Login ueber Session-Cookie war NICHT erfolgreich:" + cookieID + " / " + userFromCookie);
 						throw new SecurityException("Re-Login ueber Session-Cookie war nicht erfolgreich!");
 					}
-				} else {
-					getLogger().error("Login-Cookie loeschen, da nicht auf DB gefunden:" + cookieID);
-					cookieDelete(model);
-					addCounter(BLACKLIST_UNKNOWN_COOKIE);
-					if (isBlocked(BLACKLIST_UNKNOWN_COOKIE)) {
-						KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
-						getLogger().warn("Loeschen aller Cookies aufgrund moegliches BruteForce Angriffs (2)");
-					}
+				}
+			} else {
+				getLogger().error("Login-Cookie loeschen, da nicht auf DB gefunden:" + cookieID);
+				logoffUser(model);
+				model.lookupConversation().setCondition(Condition.NULL);
+				addCounter(BLACKLIST_UNKNOWN_COOKIE);
+				if (isBlocked(BLACKLIST_UNKNOWN_COOKIE)) {
+					KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+					getLogger().warn("Loeschen aller Cookies aufgrund moegliches BruteForce Angriffs (2)");
+					resetCounter(BLACKLIST_UNKNOWN_COOKIE);
 				}
 			}
 		}
+		// }
+	}
+
+	private static String lookupLoginCookie(List<Cookie> cookies) {
+
+		// Check for cookie
+		String cookieID = null;
+		if (cookies != null) {
+			for (Cookie cookieReadFromRequest : cookies) {
+				String cookieName = cookieReadFromRequest.getName();
+				if (cookieName.equals(COOKIE_NAME) && StringUtils.startsWith(cookieReadFromRequest.getValue(), COOKIE_ID_PREFIX)) {
+					cookieID = cookieReadFromRequest.getValue();
+				}
+			}
+		}
+		return cookieID;
 	}
 
 	private static void cookieWrite(Model model) {
 
-		if (!model.isInitialRequest() && model.lookupConversation().getCondition().equals(Condition.LOGIN)) {
+		if (model.lookupConversation().getCondition().equals(Condition.LOGIN)) {
 			// db: cookieID / user
 			// cookie: cookie_name / uuid
 
@@ -380,6 +429,15 @@ public class Security {
 			long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
 			value = String.valueOf(++actualValue);
 		}
+
+		KVMemoryMap.getInstance().writeKeyValue(key, value, true);
+		getLogger().warn("Schreibe Blacklist fuer " + key + " = " + value);
+	}
+
+	public static void resetCounter(String itemToCount) {
+
+		String key = KVDB_KEY_BLACKLIST + itemToCount;
+		String value = "1";
 
 		KVMemoryMap.getInstance().writeKeyValue(key, value, true);
 		getLogger().warn("Schreibe Blacklist fuer " + key + " = " + value);

@@ -64,9 +64,8 @@ public class FilesMainServlet {
 		stopWatch.timePoint(true, "s3");
 		ThreadLocalHelper.setConversationID(request.getParameter(HTMLUtils.CONVERSATION));
 
-		Model model;
 		HttpSession session = request.getSession(true);
-		model = (Model) session.getAttribute(SESSION_ATTRIBUTE_MODEL);
+		Model model = Security.lookupModelFromSession(session, request);
 		if (model == null) {
 			model = initModel(request);
 		}

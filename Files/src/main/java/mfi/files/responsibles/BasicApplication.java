@@ -863,10 +863,10 @@ public class BasicApplication extends AbstractResponsible {
 		table.addTD(clip, 1, null);
 		table.addNewRow();
 		table.addTD("Session:", 1, null);
-		table.addTD(StringHelper.langenStringFuerAnzeigeAufbereiten(model.getSessionID()), 1, null);
+		table.addTD(StringUtils.left(model.getSessionID(), 10), 1, null);
 		table.addNewRow();
 		table.addTD("Login:", 1, null);
-		table.addTD(StringHelper.langenStringFuerAnzeigeAufbereiten(model.getLoginCookieID()), 1, null);
+		table.addTD(StringUtils.left(model.getLoginCookieID(), 10), 1, null);
 		table.addNewRow();
 		if (model.lookupConversation().getCookiesReadFromRequest() != null && model.isDevelopmentMode()) {
 			for (Cookie cookieReadFromRequest : model.lookupConversation().getCookiesReadFromRequest()) {

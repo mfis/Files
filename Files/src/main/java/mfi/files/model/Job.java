@@ -192,7 +192,7 @@ public abstract class Job implements Runnable {
 				if (StringUtils.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey("application.properties.developmentMode"))
 						.equalsIgnoreCase(Boolean.TRUE.toString())) {
 
-					LoggerFactory.getLogger(jobModel.getKey().toString()).info("Job run:" + out);
+					LoggerFactory.getLogger(jobModel.getKey().toString()).debug("Job run:" + out);
 				}
 			} else {
 
