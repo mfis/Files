@@ -28,6 +28,12 @@ import mfi.files.model.Condition;
 import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.Model;
 import mfi.files.servlet.FilesMainServlet;
+import net.pushover.client.MessagePriority;
+import net.pushover.client.PushoverClient;
+import net.pushover.client.PushoverException;
+import net.pushover.client.PushoverMessage;
+import net.pushover.client.PushoverRestClient;
+import net.pushover.client.Status;
 
 /*
  * DEPRECATED:
@@ -478,12 +484,43 @@ public class Security {
 			long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
 			if (actualValue > 6L) {
 				getLogger().warn("Blockiert laut Blacklist: " + key + " = " + actualValue);
+				try {
+					sendMessage("Blacklisted key: " + itemToCheck, new PushoverRestClient());
+				} catch (Exception e) {
+					getLogger().error(e.getLocalizedMessage(), e);
+				}
 				return true;
 			} else {
 				return false;
 			}
 		} else {
 			return false;
+		}
+	}
+
+	private static void sendMessage(String text, PushoverClient pushClient) throws PushoverException {
+
+		String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
+		String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
+		String clientName = KVMemoryMap.getInstance().readValueFromKey("application.pushService.clientName");
+		String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
+
+		if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
+			return;
+		}
+
+		PushoverMessage message = PushoverMessage.builderWithApiToken(apiToken) //
+				.setUserId(userID) //
+				.setDevice(clientName) //
+				.setMessage(text) //
+				.setPriority(MessagePriority.HIGH) //
+				.setTitle(environmentName + " - Files") //
+				.build();
+
+		Status status = null;
+		status = pushClient.pushMessage(message);
+		if (status != null && status.getStatus() > 1) {
+			throw new IllegalStateException("Pushover client status=" + status);
 		}
 	}
 

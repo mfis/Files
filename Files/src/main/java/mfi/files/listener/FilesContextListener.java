@@ -55,7 +55,7 @@ public class FilesContextListener {
 			logger.error("Error saving StaticResources", e);
 		}
 
-		sendMessage("Status: Heruntergefahren");
+		sendMessage("Status: Heruntergefahren", pushClient);
 
 		logger.info("Context destroyed.");
 	}
@@ -102,7 +102,7 @@ public class FilesContextListener {
 		lookupEnvironment(properties);
 
 		pushClient = new PushoverRestClient();
-		sendMessage("Status: Hochgefahren");
+		sendMessage("Status: Hochgefahren", pushClient);
 
 		logger.info("Context initialized.");
 	}
@@ -143,7 +143,7 @@ public class FilesContextListener {
 
 	}
 
-	private void sendMessage(String text) {
+	public static void sendMessage(String text, PushoverClient pushClient) {
 
 		String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
 		String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
