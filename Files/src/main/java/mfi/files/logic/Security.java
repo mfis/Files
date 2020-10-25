@@ -471,7 +471,7 @@ public class Security {
 
 		if (KVMemoryMap.getInstance().containsKey(key)) {
 			long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
-			if (actualValue > 3L) {
+			if (actualValue > 6L) {
 				getLogger().warn("Blockiert laut Blacklist: " + key + " = " + actualValue);
 				return true;
 			} else {
