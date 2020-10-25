@@ -22,7 +22,6 @@ import mfi.files.annotation.Responsible;
 import mfi.files.helper.ApplicationUtil;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.ServletHelper;
-import mfi.files.helper.StringHelper;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.ButtonBar;
 import mfi.files.htmlgen.HTMLTable;
@@ -876,7 +875,7 @@ public class BasicApplication extends AbstractResponsible {
 				table.addTD(cookieName, 1, null);
 				table.addNewRow();
 				table.addTD("", 1, null);
-				table.addTD(StringHelper.langenStringFuerAnzeigeAufbereiten(cookieValue), 1, null);
+				table.addTD(StringUtils.left(cookieValue, 10), 1, null);
 				table.addNewRow();
 			}
 		}

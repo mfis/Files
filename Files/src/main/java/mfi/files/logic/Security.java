@@ -30,7 +30,9 @@ import mfi.files.model.Model;
 import mfi.files.servlet.FilesMainServlet;
 
 /*
+ * DEPRECATED:
  * UNMAINTAINABLE CLASS - DO NOT EDIT ANYMORE -> REWRITE !!
+ * REPLACE WITH SPRING SECURITY OR COMPARABLE LIBRARY
  */
 @Deprecated
 public class Security {
