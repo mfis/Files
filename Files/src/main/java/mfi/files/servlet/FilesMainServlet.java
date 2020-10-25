@@ -86,6 +86,14 @@ public class FilesMainServlet {
 
 		stopWatch.timePoint(model.isDevelopmentMode(), "w1");
 		if (model.isDeleteModelAfterRequest()) {
+			if (model.lookupConversation().getCookiesToWriteToResponse() != null) {
+				// write only cookies to delete
+				for (Cookie cookieToWrite : model.lookupConversation().getCookiesToWriteToResponse().values()) {
+					if (cookieToWrite.getMaxAge() == 0) {
+						response.addCookie(CookieHelper.cloneCookie(cookieToWrite));
+					}
+				}
+			}
 			model = null;
 		} else {
 			if (model.lookupConversation().getCookiesToWriteToResponse() != null) {

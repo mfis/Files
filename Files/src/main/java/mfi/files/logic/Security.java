@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,6 +102,12 @@ public class Security {
 				if (StringUtils.isEmpty(model.getUser()) || !KVMemoryMap.getInstance().containsKey("user." + model.getUser())) {
 					model.lookupConversation().getMeldungen().add("Bitte melde dich an.");
 					logoffUser(model);
+					addCounter(BLACKLIST_SESSION_WITHOUT_LOGIN);
+					if (isBlocked(BLACKLIST_SESSION_WITHOUT_LOGIN)) {
+						KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+						getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs (4)");
+						resetCounter(BLACKLIST_SESSION_WITHOUT_LOGIN);
+					}
 				}
 				if (StringUtils.isEmpty(sid) || StringUtils.isEmpty(model.getSessionID())
 						|| !StringUtils.equals(sid, model.getSessionID())) {
@@ -109,6 +116,12 @@ public class Security {
 					}
 					getLogger().warn("Die SessionID ist ungueltig:" + sid + "/" + model.getSessionID());
 					logoffUser(model);
+					addCounter(BLACKLIST_UNKNOWN_SESSION);
+					if (isBlocked(BLACKLIST_UNKNOWN_SESSION)) {
+						KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVDB_KEY_COOKIES);
+						getLogger().warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs (4)");
+						resetCounter(BLACKLIST_UNKNOWN_SESSION);
+					}
 				}
 			}
 		}
@@ -176,7 +189,8 @@ public class Security {
 			}
 			if (StringUtils.isBlank(cookieID)
 					|| StringUtils.isBlank(KVMemoryMap.getInstance().readValueFromKey(KVDB_KEY_COOKIES + cookieID))) {
-				model = null;
+				model.setUser(null);
+				model.setVerzeichnisBerechtigungen(new LinkedList<>());
 				if (StringUtils.isNotBlank(cookieID)) {
 					addCounter(BLACKLIST_SESSION_WITHOUT_LOGIN);
 					if (isBlocked(BLACKLIST_SESSION_WITHOUT_LOGIN)) {
@@ -282,7 +296,7 @@ public class Security {
 		KVMemoryMap.getInstance().writeKeyValue(KVDB_KEY_COOKIES + cookieID, cookieValue, true);
 	}
 
-	private static void cookieRenew(Model model, String cookieID) throws Exception {
+	private static void cookieRenew(Model model, String cookieID) {
 
 		writeCookieIdentifierToKVDB(model, cookieID);
 
@@ -297,12 +311,20 @@ public class Security {
 
 		if (StringUtils.isNotEmpty(model.getLoginCookieID())) {
 			KVMemoryMap.getInstance().deleteKey(KVDB_KEY_COOKIES + model.getLoginCookieID());
+			Cookie cookie = new Cookie(COOKIE_NAME, model.getLoginCookieID());
+			cookie.setMaxAge(0);
+			model.lookupConversation().getCookiesToWriteToResponse().put(COOKIE_NAME, cookie);
+			model.setLoginCookieID(null);
 		}
 
-		Cookie cookie = new Cookie(COOKIE_NAME, model.getLoginCookieID());
-		cookie.setMaxAge(0);
-		model.lookupConversation().getCookiesToWriteToResponse().put(COOKIE_NAME, cookie);
-		model.setLoginCookieID(null);
+		String cookieID = lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest());
+		if (StringUtils.isNotEmpty(cookieID)) {
+			KVMemoryMap.getInstance().deleteKey(KVDB_KEY_COOKIES + cookieID);
+			Cookie cookie = new Cookie(COOKIE_NAME, cookieID);
+			cookie.setMaxAge(0);
+			model.lookupConversation().getCookiesToWriteToResponse().put(COOKIE_NAME, cookie);
+			model.setLoginCookieID(null);
+		}
 	}
 
 	public static boolean authenticateUser(Model model, String user, String pass, String passHash, Map<String, String> parameters,

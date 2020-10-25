@@ -68,7 +68,7 @@ public class StopWatchHelper {
 			} else {
 				frmt = frmt + "no measurement";
 			}
-			logger.info(frmt);
+			logger.debug(frmt);
 		}
 	}
 }
