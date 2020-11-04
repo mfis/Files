@@ -1,6 +1,6 @@
 package mfi.files.model;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -11,30 +11,32 @@ import java.util.StringTokenizer;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
-import mfi.files.helper.ServletHelper;
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
+import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 
-public class Model {
+public class Model implements Serializable {
 
-	private boolean initialRequest;
+	private static final String IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT = "isClientTouchDevice() wurde nicht initialisiert!";
+	private static final long serialVersionUID = 1L;
 
 	private String loginCookieID;
 	private String user;
 	private List<String> verzeichnisBerechtigungen;
 	private String zwischenablage;
 
-	Map<Integer, Conversation> conversations;
+	private Map<Integer, Conversation> conversations;
 
 	private boolean developmentMode;
 	private boolean webserverRunsBehindSSLReverseProxy;
 	private String hostname;
 	private String sessionID;
-	// private String ipAddress;
 	private boolean deleteModelAfterRequest;
 	private String userAgent;
+	private Integer lastUsedConversationID = null;
 
 	private String noteFileSuffix;
 	private List<String> favoriteFolders;
@@ -52,22 +54,20 @@ public class Model {
 
 	public Model() {
 		istTouchDeviceGeprueft = false;
-		initialRequest = false;
 		deleteModelAfterRequest = false;
 		user = null;
-		verzeichnisBerechtigungen = new LinkedList<String>();
+		verzeichnisBerechtigungen = new LinkedList<>();
 		conversations = null;
 		isBatch = false;
 		uploadTicket = false;
 	}
 
-	public void initializeModelOnFirstRequest(HttpServletRequest request) throws IOException {
+	public void initializeModelOnFirstRequest(HttpServletRequest request) {
 
-		conversations = new HashMap<Integer, Conversation>();
+		conversations = new HashMap<>();
 
 		setSessionID(null);
 		setUser(null);
-		setInitialRequest(true);
 
 		if (request != null) {
 			setHostname(request.getHeader("host"));
@@ -94,28 +94,30 @@ public class Model {
 
 		Integer id = ThreadLocalHelper.getConversationID();
 		if (id == null) {
-			synchronized (this) {
-				Integer max = 0;
-				if (!conversations.isEmpty()) {
-					max = Collections.max(conversations.keySet());
+			if (lastUsedConversationID != null) {
+				id = lastUsedConversationID;
+			} else {
+				synchronized (this) {
+					id = lookupNextConversationID();
+					LoggerFactory.getLogger(Security.class).info("New conversation: {}", id);
+					ThreadLocalHelper.setConversationID(id.toString());
 				}
-				id = max + 1;
-				ThreadLocalHelper.setConversationID(id.toString());
 			}
 		}
 
 		if (!conversations.containsKey(id)) {
 			String startVerzeichnis = null;
 			if (isUserAuthenticated()) {
-				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey("user." + user + ".homeDirectory");
+				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".homeDirectory");
 			}
 			Conversation newConversation = new Conversation(id, startVerzeichnis);
-			newConversation.lookupConditionForRequest(null, true);
+			newConversation.lookupConditionForRequest(null);
 			newConversation.setTextViewPush(!istTelephone);
 			newConversation.setFilesystemViewDetails(!istTelephone);
 			newConversation.setTextViewNumbers(false);
 			conversations.put(id, newConversation);
 		}
+		lastUsedConversationID = id;
 		return conversations.get(id);
 	}
 
@@ -137,12 +139,16 @@ public class Model {
 		return conversations.size();
 	}
 
-	public void lookupConditionForRequest(Map<String, String> parameters) {
-		if (parameters.containsKey(ServletHelper.UPLOAD_TICKET_PARAM)) {
-			lookupConversation().lookupConditionForRequest(Condition.FILE_UPLOAD.name(), isInitialRequest());
-		} else {
-			lookupConversation().lookupConditionForRequest(parameters.get(HTMLUtils.CONDITION), isInitialRequest());
+	public int lookupNextConversationID() {
+		Integer max = 0;
+		if (!conversations.isEmpty()) {
+			max = Collections.max(conversations.keySet());
 		}
+		return max + 1;
+	}
+
+	public void lookupConditionForRequest(Map<String, String> parameters) {
+		lookupConversation().lookupConditionForRequest(parameters.get(HTMLUtils.CONDITION));
 	}
 
 	public String getHostname() {
@@ -208,7 +214,7 @@ public class Model {
 		if (istTouchDeviceGeprueft) {
 			return istTouchDevice;
 		} else {
-			throw new IllegalArgumentException("isClientTouchDevice() wurde nicht initialisiert!");
+			throw new IllegalArgumentException(IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT);
 		}
 	}
 
@@ -217,7 +223,7 @@ public class Model {
 		if (istTouchDeviceGeprueft) {
 			return istTelephone;
 		} else {
-			throw new IllegalArgumentException("isClientTouchDevice() wurde nicht initialisiert!");
+			throw new IllegalArgumentException(IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT);
 		}
 	}
 
@@ -226,7 +232,7 @@ public class Model {
 		if (istTouchDeviceGeprueft) {
 			return istTablet;
 		} else {
-			throw new IllegalArgumentException("isClientTouchDevice() wurde nicht initialisiert!");
+			throw new IllegalArgumentException(IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT);
 		}
 	}
 
@@ -237,14 +243,6 @@ public class Model {
 		} else {
 			throw new IllegalArgumentException("isTouchIconFaehig() wurde nicht initialisiert!");
 		}
-	}
-
-	public boolean isInitialRequest() {
-		return initialRequest;
-	}
-
-	public void setInitialRequest(boolean initialRequest) {
-		this.initialRequest = initialRequest;
 	}
 
 	public boolean isUserAuthenticated() {
@@ -265,16 +263,16 @@ public class Model {
 
 			// Favorites
 			StringTokenizer tokenizerFav = new StringTokenizer(
-					KVMemoryMap.getInstance().readValueFromKey("user." + user + ".favoriteFolders"), ",");
-			setFavoriteFolders(new LinkedList<String>());
+					KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".favoriteFolders"), ",");
+			setFavoriteFolders(new LinkedList<>());
 			while (tokenizerFav.hasMoreElements()) {
 				getFavoriteFolders().add(((String) tokenizerFav.nextElement()).trim());
 			}
 
 			// Berechtigungen
 			StringTokenizer tokenizerBer = new StringTokenizer(
-					KVMemoryMap.getInstance().readValueFromKey("user." + user + ".allowedDirectory"), ",");
-			setVerzeichnisBerechtigungen(new LinkedList<String>());
+					KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".allowedDirectory"), ",");
+			setVerzeichnisBerechtigungen(new LinkedList<>());
 			while (tokenizerBer.hasMoreElements()) {
 				String ber = ((String) tokenizerBer.nextElement()).trim();
 				if (ber.length() > 1 && StringUtils.endsWith(ber, "/")) {
@@ -286,13 +284,14 @@ public class Model {
 
 			// Home
 			if (!isBatch) {
-				lookupConversation().setVerzeichnis(KVMemoryMap.getInstance().readValueFromKey("user." + user + ".homeDirectory"));
+				lookupConversation().setVerzeichnis(
+						KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".homeDirectory"));
 			}
 
 		} else {
 			lookupConversation().setVerzeichnis(null);
 			setFavoriteFolders(null);
-			setVerzeichnisBerechtigungen(new LinkedList<String>());
+			setVerzeichnisBerechtigungen(new LinkedList<>());
 		}
 	}
 

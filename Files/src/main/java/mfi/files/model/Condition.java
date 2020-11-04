@@ -14,6 +14,10 @@ public enum Condition {
 	SSL_NOTICE(AllowedFor.ANYBODY, Checks.NONE, Resets.NONE, StepBack.NO), //
 	//
 
+	AJAX(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
+	EVENT(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
+	//
+
 	FS_NAVIGATE(AllowedFor.USER, Checks.SELECTED_FILE, Resets.NONE, StepBack.NO), //
 	FS_EDIT_FILE(AllowedFor.USER, Checks.SELECTED_FILE, Resets.NONE, StepBack.NO), //
 	FS_SAVE_EDITED_FILE(AllowedFor.USER, Checks.NONE, Resets.LOCK_AND_FILE_AFTER, StepBack.NO), //
@@ -94,7 +98,9 @@ public enum Condition {
 	IMAGE_NEXT_FULL(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
 	//
 
+	FILE_UPLOAD_DEFAULT(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
 	FILE_UPLOAD(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
+	FILE_DOWNLOAD_DEFAULT(AllowedFor.USER, Checks.NONE, Resets.NONE, StepBack.NO), //
 	FILE_DOWNLOAD_ORIGINAL(AllowedFor.USER, Checks.SELECTED_FILE, Resets.NONE, StepBack.NO), //
 	FILE_DOWNLOAD_DECRYPTED(AllowedFor.USER, Checks.SELECTED_FILE, Resets.NONE, StepBack.NO), //
 	FILE_DOWNLOAD_DECRYPTED_AFTER_RESET_CLIENT_PW(AllowedFor.USER, Checks.SELECTED_FILE, Resets.NONE, StepBack.YES), //

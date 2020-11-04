@@ -136,7 +136,8 @@ public class HTMLUtils {
 		} else if (model != null && StringUtils.isNotBlank(model.getUser())) {
 			titleBar.getOptions().add(new OptionLink("Menü", menuCondition, "menu"));
 			if (!model.isPhone()) {
-				titleBar.getOptions().add(new OptionLink("Neuer Tab", "/", "addnew"));
+				titleBar.getOptions()
+						.add(new OptionLink("Neuer Tab", "/?" + CONVERSATION + "=" + model.lookupNextConversationID(), "addnew"));
 				titleBar.getOptions().add(new OptionLink(model.getUser(), "", "user"));
 				titleBar.getOptions().add(new OptionLink("Abmelden", Condition.LOGOFF, "exit"));
 				if (!model.isClientTouchDevice()) {
@@ -425,7 +426,8 @@ public class HTMLUtils {
 		KVMemoryMap.getInstance().readListWithPartKey("temporary.downloadtoken.");
 		KVMemoryMap.getInstance().writeKeyValue("temporary.downloadtoken." + token + "." + expire, file.getAbsolutePath(), false);
 
-		String url = FilesDownloadServlet.SERVLETPFAD + "?token=" + token + "&" + FilesDownloadServlet.FORCE_DOWNLOAD + "=" + forceDownload;
+		String url = FilesDownloadServlet.SERVLETPFAD + "?token=" + token + "&" + CONVERSATION + "="
+				+ model.lookupConversation().getConversationID() + "&" + FilesDownloadServlet.FORCE_DOWNLOAD + "=" + forceDownload;
 
 		if (file.isServerCryptedDirectPassword() || file.isServerCryptedHashedPassword()) {
 			url = url + "&" + CONVERSATION + "=" + model.lookupConversation().getConversationID();
@@ -582,12 +584,10 @@ public class HTMLUtils {
 
 	public static void buildHtmlFooter(StringBuilder out, Model model, Map<String, String> parameters) {
 
-		// out.append("</div> \n");
-
 		boolean isAjaxRequest = ServletHelper.lookupIsCurrentRequestTypeAjax(parameters);
 
 		if (model.isClientTouchDevice() && (model.lookupConversation().getCondition() == Condition.NULL
-				|| model.lookupConversation().getCondition() == Condition.LOGIN_FORMULAR || model.isInitialRequest())) {
+				|| model.lookupConversation().getCondition() == Condition.LOGIN_FORMULAR || !model.isUserAuthenticated())) {
 			out.append("<script type='text/javascript'>putStandaloneMarkerToElement();</script>\n");
 		}
 

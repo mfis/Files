@@ -1,6 +1,5 @@
 package mfi.files.helper;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.maps.KVMemoryMap;
+import mfi.files.model.Condition;
 import mfi.files.model.RequestValidationException;
 
 public class ServletHelper {
@@ -35,7 +35,6 @@ public class ServletHelper {
 	public static final char REQUEST_TYPE_AJAX = 'a';
 	public static final int HTTP_STATUS_CODE_NON_AUTHORITATIVE_RESPONSE = 203;
 	public static final String NON_BREAKING_SPACE = "\u00A0";
-	public static final String UPLOAD_TICKET_PARAM = "uploadTicket";
 
 	public static boolean isLocalNetworkClient(Map<String, String> parameters) {
 		if (parameters.get(SERVLET_REMOTE_IP).equals("0:0:0:0:0:0:0:1")) {
@@ -60,35 +59,8 @@ public class ServletHelper {
 		return false;
 	}
 
-	public static boolean lookupUseGzip(Map<String, String> parameters) {
-
-		if (parameters == null) {
-			return false;
-		}
-
-		boolean gzipConfigSwitch = Boolean.valueOf(KVMemoryMap.getInstance().readValueFromKey("application.properties.useGzip"));
-
-		String accept = parameters.get(SERVLET_ACCEPT_ENCODING);
-		boolean gzipBrowserSupport = accept != null && accept.indexOf("gzip") >= 0;
-
-		return gzipConfigSwitch && gzipBrowserSupport && !isLocalNetworkClient(parameters);
-	}
-
-	public static boolean lookupUseAjax() {
-
-		boolean ajaxConfigSwitch = Boolean.valueOf(KVMemoryMap.getInstance().readValueFromKey("application.properties.useAjax"));
-
-		return ajaxConfigSwitch;
-	}
-
 	public static char lookupAjaxSubmitConfig() {
-
-		if (lookupUseAjax()) {
-			return REQUEST_TYPE_AJAX;
-		} else {
-			return REQUEST_TYPE_SUBMIT;
-		}
-
+		return REQUEST_TYPE_AJAX;
 	}
 
 	public static boolean lookupIsCurrentRequestTypeAjax(Map<String, String> parameters) {
@@ -109,8 +81,8 @@ public class ServletHelper {
 
 	}
 
-	public static Map<String, String> parseRequest(HttpServletRequest request, HttpSession session)
-			throws RequestValidationException, UnsupportedEncodingException {
+	public static Map<String, String> parseRequest(HttpServletRequest request, HttpSession session, Condition defaultCondition)
+			throws RequestValidationException {
 
 		Map<String, Integer> lengthQuota = new HashMap<String, Integer>();
 		Map<String, Integer> lengthActual = new HashMap<String, Integer>();
@@ -153,6 +125,10 @@ public class ServletHelper {
 		parameters.put(ServletHelper.SERVLET_ACCEPT_ENCODING, request.getHeader("Accept-Encoding"));
 		parameters.put(ServletHelper.SERVLET_ACCEPT_LANG, request.getHeader("Accept-Language"));
 		parameters.put(ServletHelper.SERVLET_REMOTE_IP, request.getRemoteAddr());
+
+		if (!parameters.containsKey(HTMLUtils.CONDITION) && defaultCondition != null) {
+			parameters.put(HTMLUtils.CONDITION, defaultCondition.name());
+		}
 
 		return parameters;
 	}

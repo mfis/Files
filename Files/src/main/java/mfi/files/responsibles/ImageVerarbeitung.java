@@ -1,6 +1,6 @@
 package mfi.files.responsibles;
 
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -38,7 +38,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 
 		boolean fullscreen = model.lookupConversation().getCondition().equals(Condition.IMAGE_VIEW_FULLSCREEN);
 
-		LinkedList<FilesFile> list = model.lookupConversation().getFsListe();
+		List<FilesFile> list = model.lookupConversation().getFsListe();
 		boolean isNext = (navigateImage(model, +1, list) != -1);
 		boolean isPrev = (navigateImage(model, -1, list) != -1);
 
@@ -73,7 +73,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 		int direction = model.lookupConversation().getCondition() == Condition.IMAGE_NEXT
 				|| model.lookupConversation().getCondition() == Condition.IMAGE_NEXT_FULL ? +1 : -1;
 
-		LinkedList<FilesFile> list = model.lookupConversation().getFsListe();
+		List<FilesFile> list = model.lookupConversation().getFsListe();
 
 		int neu = navigateImage(model, direction, list);
 
@@ -93,7 +93,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 		return;
 	}
 
-	private int navigateImage(Model model, int direction, LinkedList<FilesFile> list) {
+	private int navigateImage(Model model, int direction, List<FilesFile> list) {
 
 		int neu = -1;
 		int aktuell = lookupImagePos(model, list);
@@ -126,7 +126,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 		return neu;
 	}
 
-	private int lookupImagePos(Model model, LinkedList<FilesFile> list) {
+	private int lookupImagePos(Model model, List<FilesFile> list) {
 
 		int aktuell = -1;
 		for (int i = 0; i < list.size(); i++) {

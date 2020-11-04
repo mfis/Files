@@ -19,6 +19,7 @@ import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
+import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.Condition.Checks;
 import mfi.files.model.Condition.Resets;
 import mfi.files.model.Condition.StepBack;
@@ -28,6 +29,7 @@ import mfi.files.responsibles.AbstractResponsible;
 
 public class Files {
 
+	private static final String UNAUTORISIERTER_AUFRUF = "Unautorisierter Aufruf: ";
 	private static Files instance;
 	private static final Logger logger = LoggerFactory.getLogger(Files.class);
 	private static Map<Condition, ResponsibleMethod> map;
@@ -35,7 +37,7 @@ public class Files {
 	static {
 		instance = new Files();
 		logger.info("Initializing Files Singleton");
-		map = new HashMap<Condition, ResponsibleMethod>();
+		map = new HashMap<>();
 	}
 
 	private Files() {
@@ -81,7 +83,18 @@ public class Files {
 		model.lookupConversation().setOriginalRequestCondition(true);
 
 		do {
-			if (map.containsKey(model.lookupConversation().getCondition())) {
+			if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && !model.isUserAuthenticated()) {
+				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getCondition().toString());
+
+			} else if (model.lookupConversation().getEditingFile() != null
+					&& !Security.isFileAllowedForUser(model, model.lookupConversation().getEditingFile())) {
+				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getEditingFile());
+
+			} else if (StringUtils.isNotBlank(model.lookupConversation().getVerzeichnis())
+					&& !Security.isFileAllowedForUser(model, new FilesFile(model.lookupConversation().getVerzeichnis()))) {
+				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getVerzeichnis());
+
+			} else if (map.containsKey(model.lookupConversation().getCondition())) {
 				ResponsibleMethod rm = map.get(model.lookupConversation().getCondition());
 
 				conditionVorbereiten(parameters, model);

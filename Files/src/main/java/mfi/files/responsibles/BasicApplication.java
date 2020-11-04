@@ -54,6 +54,8 @@ public class BasicApplication extends AbstractResponsible {
 		} else {
 			sb.append(HTMLUtils.buildMenuNar(model, "Files Anmeldung", false, buttonBar, false));
 			HTMLTable table = new HTMLTable();
+			table.addTD("Anmeldedaten", 1, HTMLTable.TABLE_HEADER);
+			table.addNewRow();
 			table.addTD("Name: ", 1, null);
 			table.addNewRow();
 			table.addTDSource(HTMLUtils.buildTextField("login_user", "", 20, Condition.LOGIN), 1, null);
@@ -63,22 +65,22 @@ public class BasicApplication extends AbstractResponsible {
 			table.addNewRow();
 			table.addTDSource(HTMLUtils.buildPasswordField("login_pass", "", 20, Condition.LOGIN, true), 1, null);
 			table.addNewRow();
+			table.addTD("Cookie-Information", 1, HTMLTable.TABLE_HEADER);
+			table.addNewRow();
+			String cookietext = "Diese Internetseite verwendet so genannte Cookies. <p> Um mehr zu erfahren, klicken Sie bitte hier:";
+			table.addTD(cookietext, null);
+			table.addNewRow();
+			table.addTD(new Button("Impressum und Datenschutzerkl&auml;rung",
+					KVMemoryMap.getInstance().readValueFromKey("application.linkToLawSite"), true).printForUseInTable(), null);
+			table.addNewRow();
+			table.addTDSource(HTMLUtils.buildCheckBox("Ich bin mit der Verwendung von Cookies einverstanden.", "COOKIE_OK", false, null), 1,
+					null);
+			table.addNewRow();
+			table.addTD("", 1, HTMLTable.TABLE_HEADER);
+			table.addNewRow();
 			table.addTDSource(new Button("Anmelden", Condition.LOGIN).printForUseInTable(), 1, null);
 			table.addNewRow();
 			sb.append(table.buildTable(model));
-
-			HTMLTable cookietable = new HTMLTable();
-			cookietable.addTD("Cookie-Information", 1, HTMLTable.TABLE_HEADER);
-			cookietable.addNewRow();
-			String cookietext = "Diese Internetseite verwendet so genannte Cookies. <p> Um mehr zu erfahren, klicken Sie bitte hier:";
-			cookietable.addTD(cookietext, null);
-			cookietable.addNewRow();
-			cookietable.addTD(new Button("Impressum und Datenschutzerkl&auml;rung",
-					KVMemoryMap.getInstance().readValueFromKey("application.linkToLawSite"), true).printForUseInTable(), null);
-			cookietable.addNewRow();
-			cookietable.addTDSource(HTMLUtils.buildCheckBox("Ich bin einverstanden", "COOKIE_OK", false, null), 1, null);
-			cookietable.addNewRow();
-			sb.append(cookietable.buildTable(model));
 
 			model.lookupConversation().setForwardCondition(null);
 			return;
@@ -336,7 +338,7 @@ public class BasicApplication extends AbstractResponsible {
 		String user = parameters.get("login_user");
 		String pass = parameters.get("login_pass");
 
-		Security.authenticateUser(model, user, pass, null, parameters, false);
+		Security.authenticateUser(model, user, pass, null, parameters);
 		if (model.isUserAuthenticated()) {
 			model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
 		} else {
@@ -898,13 +900,6 @@ public class BasicApplication extends AbstractResponsible {
 		table.addNewRow();
 		table.addTD("Ist FullScreen:", 1, null);
 		table.addTD(Boolean.toString(model.isIstWebApp()), 1, null);
-		table.addNewRow();
-		table.addTD("Ajax / current request:", 1, null);
-		table.addTD(Boolean.toString(ServletHelper.lookupUseAjax()) + " / " + ServletHelper.lookupIsCurrentRequestTypeAjax(parameters), 1,
-				null);
-		table.addNewRow();
-		table.addTD("Gzip Response:", 1, null);
-		table.addTD(Boolean.toString(ServletHelper.lookupUseGzip(parameters)), 1, null);
 		table.addNewRow();
 
 		if (model.isPhone()) {

@@ -105,7 +105,7 @@ public class TextVerarbeitung extends AbstractResponsible {
 				model.lookupConversation().isTextViewNumbers(), true, true);
 
 		if (model.lookupConversation().isTextViewPush()) {
-			model.lookupConversation().getJavaScriptOnPageLoaded().add("initPushForTextView();");
+			// FIXME: model.lookupConversation().getJavaScriptOnPageLoaded().add("initPushForTextView();");
 		}
 
 		return;

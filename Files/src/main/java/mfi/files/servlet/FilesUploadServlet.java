@@ -29,6 +29,7 @@ import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
+import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
 @Controller
@@ -36,13 +37,11 @@ public class FilesUploadServlet {
 
 	private static Log logger = LogFactory.getLog(FilesUploadServlet.class);
 
-	private static final long serialVersionUID = 1L;
-
 	@RequestMapping("/FilesUploadServlet/**")
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
-		HttpSession session = request.getSession(true);
-		Model model = (Model) session.getAttribute(FilesMainServlet.SESSION_ATTRIBUTE_MODEL);
+		HttpSession session = request.getSession(false);
+		Model model = null;
 
 		response.setContentType("text/plain");
 		response.setCharacterEncoding("UTF-8");
@@ -60,11 +59,13 @@ public class FilesUploadServlet {
 						uploadCaption = item.getString();
 					}
 					if (StringUtils.equals(item.getFieldName(), HTMLUtils.CONVERSATION)) {
-						convIdIsSet = true;
 						ThreadLocalHelper.setConversationID(item.getString());
-						ThreadLocalHelper.setModelPassword(Security.generateModelPasswordForSession(model));
-						Map<String, String> parameters = ServletHelper.parseRequest(request, session);
+						Map<String, String> parameters = ServletHelper.parseRequest(request, session, Condition.FILE_UPLOAD_DEFAULT);
+						parameters.put(HTMLUtils.CONVERSATION, item.getString());
+						model = Security.lookupModelFromSession(session, request);
 						Security.checkSecurityForRequest(model, parameters);
+						ThreadLocalHelper.setModelPassword(Security.generateModelPasswordForSession(model));
+						convIdIsSet = true;
 					}
 					if (StringUtils.equals(item.getFieldName(), "hashedPassword")) {
 						password = item.getString();
@@ -75,6 +76,9 @@ public class FilesUploadServlet {
 					}
 					if (model == null) {
 						throw new IllegalArgumentException("Model ist nicht gesetzt");
+					}
+					if (model == null || !model.isUserAuthenticated()) {
+						throw new IllegalArgumentException("User ist nicht angemeldet");
 					}
 					countFiles++;
 					String fileName = item.getName();

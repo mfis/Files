@@ -9,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import mfi.files.annotation.Responsible;
-import mfi.files.helper.ServletHelper;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.HTMLTable;
 import mfi.files.htmlgen.HTMLUtils;
@@ -47,7 +46,7 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		table.addTD(HTMLUtils.spacifyFilePath(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext(), model), 2,
 				HTMLTable.TABLE_HEADER);
 		table.addNewRow();
-		if (model.lookupConversation().getEditingFile().isDirectory() && ServletHelper.lookupUseAjax()) {
+		if (model.lookupConversation().getEditingFile().isDirectory()) {
 			table.addTDSource(HTMLUtils.buildAjaxFillInText(AjaxFillIn.DIR_SIZE_EDITING, null, false, model, null), 2, null);
 		} else {
 			table.addTD("Größe: " + DateiZugriff.fileGroesseFormatieren(model.lookupConversation().getEditingFile()), 2, null);

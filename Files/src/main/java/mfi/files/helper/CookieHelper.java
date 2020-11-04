@@ -8,6 +8,7 @@ public class CookieHelper {
 
 		Cookie clonedCookie = new Cookie(originalCookie.getName(), originalCookie.getValue());
 		clonedCookie.setMaxAge(originalCookie.getMaxAge());
+		clonedCookie.setHttpOnly(originalCookie.isHttpOnly());
 		return clonedCookie;
 	}
 }

@@ -1,11 +1,10 @@
 package mfi.files.servlet;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,23 +14,32 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import mfi.files.helper.ServletHelper;
+import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
+import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
+import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
 @Controller
 public class FilesEventServlet {
 
-	private static final long serialVersionUID = 1L;
 	public static final String SERVLETPFAD = "/FilesEventServlet";
 
 	@RequestMapping("/FilesEventServlet")
-	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException, IOException {
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-		HttpSession session = request.getSession(true);
-		Model model = null;
-		model = (Model) session.getAttribute(FilesMainServlet.SESSION_ATTRIBUTE_MODEL);
+		ThreadLocalHelper.setConversationID(request.getParameter(HTMLUtils.CONVERSATION));
+		HttpSession session = request.getSession(false);
+		Model model = Security.lookupModelFromSession(session, request);
+		Map<String, String> parameters = ServletHelper.parseRequest(request, session, Condition.EVENT);
+		Security.checkSecurityForRequest(model, parameters);
+
+		if (model == null || !model.isUserAuthenticated()) {
+			throw new IllegalArgumentException("Kein User angemeldet.");
+		}
 
 		Integer conversationID = null;
 		String conv = request.getParameter(HTMLUtils.CONVERSATION);

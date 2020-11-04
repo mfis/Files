@@ -158,7 +158,7 @@ function putStandaloneMarkerToElement() {
 
 function initPushForTextView() {
 	if (typeof (EventSource) !== "undefined") {
-		dest = dest + document.getElementById('convID').value;
+		var dest = document.getElementById('convID').value;
 		eventsource = new EventSource(dest);
 		eventsource.addEventListener('open', function(e) {
 		}, false);

@@ -1,5 +1,6 @@
 package mfi.files.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,7 +14,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import mfi.files.io.FilesFile;
 
-public class Conversation {
+public class Conversation implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private final Integer conversationID;
 
@@ -39,36 +42,32 @@ public class Conversation {
 
 	public Conversation(Integer id, String startVerzeichnis) {
 		conversationID = id;
-		cookiesReadFromRequest = new ArrayList<Cookie>();
-		cookiesToWriteToResponse = new HashMap<String, Cookie>();
-		javaScriptOnPageLoaded = new LinkedList<String>();
-		javaScriptFilesToEmbed = new LinkedList<String>();
-		htmlElementsAfterFormular = new LinkedList<String>();
-		keyPressEvents = new HashMap<String, String>();
-		setMeldungen(new LinkedList<String>());
+		cookiesReadFromRequest = new ArrayList<>();
+		cookiesToWriteToResponse = new HashMap<>();
+		javaScriptOnPageLoaded = new LinkedList<>();
+		javaScriptFilesToEmbed = new LinkedList<>();
+		htmlElementsAfterFormular = new LinkedList<>();
+		keyPressEvents = new HashMap<>();
+		setMeldungen(new LinkedList<>());
 		verzeichnis = startVerzeichnis;
 		setForwardCondition(null);
 		ajaxFillIn = false;
 		originalRequestCondition = true;
 	}
 
-	public void lookupConditionForRequest(String conditionString, boolean isInitialRequest) {
+	public void lookupConditionForRequest(String conditionString) {
 		if (StringUtils.isEmpty(conditionString)) {
-			if (isInitialRequest) {
-				setFsListe(null);
-				setEditingFile(null);
-				Condition condition = Condition.NULL;
-				setCondition(condition);
-			}
+			setFsListe(null);
+			setEditingFile(null);
+			setCondition(Condition.NULL);
 		} else {
-			Condition condition = Condition.valueOf(conditionString);
-			setCondition(condition);
+			setCondition(Condition.valueOf(conditionString));
 		}
 	}
 
 	public List<Cookie> getCookiesReadFromRequest() {
 		if (cookiesReadFromRequest == null) {
-			cookiesReadFromRequest = new ArrayList<Cookie>();
+			cookiesReadFromRequest = new ArrayList<>();
 		}
 		return cookiesReadFromRequest;
 	}
@@ -87,7 +86,7 @@ public class Conversation {
 
 	public Map<String, Cookie> getCookiesToWriteToResponse() {
 		if (cookiesToWriteToResponse == null) {
-			cookiesToWriteToResponse = new HashMap<String, Cookie>();
+			cookiesToWriteToResponse = new HashMap<>();
 		}
 		return cookiesToWriteToResponse;
 	}
@@ -120,12 +119,12 @@ public class Conversation {
 		this.verzeichnis = verzeichnis;
 	}
 
-	public LinkedList<FilesFile> getFsListe() {
+	public List<FilesFile> getFsListe() {
 		return fsListe;
 	}
 
-	public void setFsListe(LinkedList<FilesFile> fsListe) {
-		this.fsListe = fsListe;
+	public void setFsListe(List<FilesFile> fsListe) {
+		this.fsListe = (LinkedList<FilesFile>) fsListe;
 	}
 
 	public FilesFile getEditingFile() {

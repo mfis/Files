@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,22 +24,33 @@ import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
+import mfi.files.model.Condition;
 import mfi.files.model.Model;
 
 @Controller
 public class FilesDownloadServlet {
 
-	private static final long serialVersionUID = 1L;
 	static final int BUFFER_SIZE = 16384;
 	public static final String SERVLETPFAD = "/FilesDownloadServlet";
 	private static Log logger = LogFactory.getLog(FilesDownloadServlet.class);
 
-	public static String FORCE_DOWNLOAD = "forceDownload";
+	public final static String FORCE_DOWNLOAD = "forceDownload";
 
-	@RequestMapping("/FilesDownloadServlet")
-	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	@RequestMapping("/FilesDownloadServlet") // NOSONAR
+	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception { // NOSONAR
 
 		try {
+
+			ThreadLocalHelper.setConversationID(request.getParameter(HTMLUtils.CONVERSATION));
+			HttpSession session = request.getSession(false);
+			Model model = Security.lookupModelFromSession(session, request);
+			Map<String, String> parameters = ServletHelper.parseRequest(request, session, Condition.FILE_DOWNLOAD_DEFAULT);
+			Security.checkSecurityForRequest(model, parameters);
+
+			if (model == null || !model.isUserAuthenticated()) {
+				streamErrorMessageTo(response, 403);
+				return;
+			}
 
 			boolean forceDownload = StringUtils.equalsIgnoreCase(request.getParameter(FORCE_DOWNLOAD), "true");
 			String token = StringUtils.trimToNull(request.getParameter("token"));
@@ -51,7 +63,7 @@ public class FilesDownloadServlet {
 				throw new IllegalArgumentException("non-unique token:" + token);
 			}
 
-			if (list.size() == 0) {
+			if (list.isEmpty()) {
 				// token not existing
 				streamErrorMessageTo(response, 404);
 				return;
@@ -90,8 +102,6 @@ public class FilesDownloadServlet {
 			if (file.isServerCryptedDirectPassword() || file.isServerCryptedHashedPassword()) {
 
 				try {
-					HttpSession session = request.getSession(true);
-					Model model = (Model) session.getAttribute(FilesMainServlet.SESSION_ATTRIBUTE_MODEL);
 					FilesFile fileFromModel = model.lookupConversation(Integer.parseInt(request.getParameter(HTMLUtils.CONVERSATION)))
 							.getEditingFile();
 					file.passwordsFromOtherFile(fileFromModel);
@@ -101,12 +111,6 @@ public class FilesDownloadServlet {
 					streamErrorMessageTo(response, 403);
 					return;
 				}
-
-				// if (!file.isReadable()) {
-				// streamErrorMessageTo(response, 403);
-				// return;
-				// }
-
 			}
 
 			streamFileTo(response, file, forceDownload);

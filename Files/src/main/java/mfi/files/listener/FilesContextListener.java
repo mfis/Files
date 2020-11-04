@@ -196,7 +196,7 @@ public class FilesContextListener {
 			sb.append("\nSystemProperty:" + a + "=" + StringUtils.trimToEmpty(System.getProperty(a)));
 		}
 		sb.append("\n");
-		logger.info(sb.toString());
+		logger.debug(sb.toString());
 	}
 
 }
