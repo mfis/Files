@@ -131,9 +131,7 @@ public class HTMLUtils {
 		refresh.setId("refresh");
 		titleBar.getOptions().add(refresh);
 		model.lookupConversation().getJavaScriptOnPageLoaded().add("document.getElementById('refresh').className = '';");
-		if (model.isUploadTicket()) {
-			titleBar.getOptions().add(new OptionLink("Abmelden", Condition.LOGOFF, "exit"));
-		} else if (model != null && StringUtils.isNotBlank(model.getUser())) {
+		if (StringUtils.isNotBlank(model.getUser())) {
 			titleBar.getOptions().add(new OptionLink("Menü", menuCondition, "menu"));
 			if (!model.isPhone()) {
 				titleBar.getOptions()
@@ -423,8 +421,8 @@ public class HTMLUtils {
 		token = new String(new Base32(0).encode(token.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
 		token = StringUtils.remove(token, "=");
 
-		KVMemoryMap.getInstance().readListWithPartKey("temporary.downloadtoken.");
-		KVMemoryMap.getInstance().writeKeyValue("temporary.downloadtoken." + token + "." + expire, file.getAbsolutePath(), false);
+		KVMemoryMap.getInstance().readListWithPartKey(FilesDownloadServlet.DOWNLOADTOKEN);
+		KVMemoryMap.getInstance().writeKeyValue(FilesDownloadServlet.DOWNLOADTOKEN + token + "." + expire, file.getAbsolutePath(), false);
 
 		String url = FilesDownloadServlet.SERVLETPFAD + "?token=" + token + "&" + CONVERSATION + "="
 				+ model.lookupConversation().getConversationID() + "&" + FilesDownloadServlet.FORCE_DOWNLOAD + "=" + forceDownload;

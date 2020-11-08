@@ -18,6 +18,11 @@ import javax.servlet.http.Cookie;
 import org.apache.commons.lang3.StringUtils;
 
 import mfi.files.maps.KVMemoryMap;
+import net.pushover.client.MessagePriority;
+import net.pushover.client.PushoverException;
+import net.pushover.client.PushoverMessage;
+import net.pushover.client.PushoverRestClient;
+import net.pushover.client.Status;
 
 public class Hilfsklasse {
 
@@ -184,6 +189,32 @@ public class Hilfsklasse {
 		line = StringUtils.removeStart(line, "?0");
 		line = StringUtils.removeStart(line, "?1");
 		return line.replaceAll("[^a-zA-Z]+", "");
+	}
+
+	public static void sendPushMessage(String text) throws PushoverException {
+
+		String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
+		String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
+		String clientName = KVMemoryMap.getInstance().readValueFromKey("application.pushService.clientName");
+		String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
+
+		if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
+			return;
+		}
+
+		PushoverMessage message = PushoverMessage.builderWithApiToken(apiToken) //
+				.setUserId(userID) //
+				.setDevice(clientName) //
+				.setMessage(text) //
+				.setPriority(MessagePriority.HIGH) //
+				.setTitle(environmentName + " - Files") //
+				.build();
+
+		Status status = null;
+		status = new PushoverRestClient().pushMessage(message);
+		if (status != null && status.getStatus() > 1) {
+			throw new IllegalStateException("Pushover client status=" + status);
+		}
 	}
 
 }

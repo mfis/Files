@@ -21,9 +21,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.ServletHelper;
-import mfi.files.helper.StringHelper;
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.io.FilesFile;
@@ -134,10 +132,6 @@ public class FilesUploadServlet {
 			dir = model.lookupConversation().getEditingFile().getAbsolutePath() + FilesFile.separator;
 		} else {
 			dir = model.lookupConversation().getEditingFile().getParent() + FilesFile.separator;
-		}
-
-		if (model.isUploadTicket()) {
-			dir = dir + Hilfsklasse.zeitstempelAlsDateisystemObjekt() + "_" + StringHelper.idFromName(caption) + FilesFile.separator;
 		}
 
 		FileUtils.forceMkdir(new File(dir));

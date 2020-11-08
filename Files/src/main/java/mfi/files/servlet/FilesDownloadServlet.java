@@ -30,6 +30,7 @@ import mfi.files.model.Model;
 @Controller
 public class FilesDownloadServlet {
 
+	public static final String DOWNLOADTOKEN = "xtoken.download.";
 	static final int BUFFER_SIZE = 16384;
 	public static final String SERVLETPFAD = "/FilesDownloadServlet";
 	private static Log logger = LogFactory.getLog(FilesDownloadServlet.class);
@@ -56,8 +57,8 @@ public class FilesDownloadServlet {
 			String token = StringUtils.trimToNull(request.getParameter("token"));
 			String search = StringUtils.trimToNull(request.getParameter("search"));
 
-			// temporary.downloadtoken.ABC123XYZ.1273628883 = /my/file.txt
-			List<String[]> list = KVMemoryMap.getInstance().readListWithPartKey("temporary.downloadtoken." + token + ".");
+			// [DOWNLOADTOKEN].ABC123XYZ.1273628883 = /my/file.txt
+			List<String[]> list = KVMemoryMap.getInstance().readListWithPartKey(DOWNLOADTOKEN + token + ".");
 
 			if (list.size() > 1) {
 				throw new IllegalArgumentException("non-unique token:" + token);

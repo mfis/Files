@@ -23,7 +23,7 @@ public class Model implements Serializable {
 	private static final String IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT = "isClientTouchDevice() wurde nicht initialisiert!";
 	private static final long serialVersionUID = 1L;
 
-	private String loginCookieID;
+	private LoginToken loginCookieID;
 	private String user;
 	private List<String> verzeichnisBerechtigungen;
 	private String zwischenablage;
@@ -50,8 +50,6 @@ public class Model implements Serializable {
 
 	private boolean isBatch;
 
-	private boolean uploadTicket;
-
 	public Model() {
 		istTouchDeviceGeprueft = false;
 		deleteModelAfterRequest = false;
@@ -59,7 +57,6 @@ public class Model implements Serializable {
 		verzeichnisBerechtigungen = new LinkedList<>();
 		conversations = null;
 		isBatch = false;
-		uploadTicket = false;
 	}
 
 	public void initializeModelOnFirstRequest(HttpServletRequest request) {
@@ -108,7 +105,7 @@ public class Model implements Serializable {
 		if (!conversations.containsKey(id)) {
 			String startVerzeichnis = null;
 			if (isUserAuthenticated()) {
-				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".homeDirectory");
+				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".homeDirectory");
 			}
 			Conversation newConversation = new Conversation(id, startVerzeichnis);
 			newConversation.lookupConditionForRequest(null);
@@ -263,7 +260,7 @@ public class Model implements Serializable {
 
 			// Favorites
 			StringTokenizer tokenizerFav = new StringTokenizer(
-					KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".favoriteFolders"), ",");
+					KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".favoriteFolders"), ",");
 			setFavoriteFolders(new LinkedList<>());
 			while (tokenizerFav.hasMoreElements()) {
 				getFavoriteFolders().add(((String) tokenizerFav.nextElement()).trim());
@@ -271,7 +268,7 @@ public class Model implements Serializable {
 
 			// Berechtigungen
 			StringTokenizer tokenizerBer = new StringTokenizer(
-					KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".allowedDirectory"), ",");
+					KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".allowedDirectory"), ",");
 			setVerzeichnisBerechtigungen(new LinkedList<>());
 			while (tokenizerBer.hasMoreElements()) {
 				String ber = ((String) tokenizerBer.nextElement()).trim();
@@ -285,7 +282,7 @@ public class Model implements Serializable {
 			// Home
 			if (!isBatch) {
 				lookupConversation().setVerzeichnis(
-						KVMemoryMap.getInstance().readValueFromKey(Security.KVDB_USER_IDENTIFIER + user + ".homeDirectory"));
+						KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".homeDirectory"));
 			}
 
 		} else {
@@ -319,11 +316,11 @@ public class Model implements Serializable {
 		this.developmentMode = developmentMode;
 	}
 
-	public String getLoginCookieID() {
+	public LoginToken getLoginCookieID() {
 		return loginCookieID;
 	}
 
-	public void setLoginCookieID(String loginCookieID) {
+	public void setLoginCookieID(LoginToken loginCookieID) {
 		this.loginCookieID = loginCookieID;
 	}
 
@@ -353,14 +350,6 @@ public class Model implements Serializable {
 
 	public void setWebserverRunsBehindSSLReverseProxy(boolean webserverRunsBehindSSLReverseProxy) {
 		this.webserverRunsBehindSSLReverseProxy = webserverRunsBehindSSLReverseProxy;
-	}
-
-	public boolean isUploadTicket() {
-		return uploadTicket;
-	}
-
-	public void setUploadTicket(boolean uploadTicket) {
-		this.uploadTicket = uploadTicket;
 	}
 
 }

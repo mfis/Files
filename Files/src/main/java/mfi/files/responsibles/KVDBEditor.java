@@ -157,7 +157,11 @@ public class KVDBEditor extends AbstractResponsible {
 
 		StringBuilder lines = new StringBuilder();
 		for (String zeile : filtered) {
-			lines.append(zeile + "\n");
+			String[] strings = StringUtils.split(zeile, '=');
+			String key = strings[0];
+			String val = StringUtils.startsWith(strings[0], KVMemoryMap.KVDB_KEY_LOGINTOKEN) ? StringUtils.left(strings[1], 100) + "..."
+					: strings[1];
+			lines.append(key + " = " + val + "\n");
 		}
 
 		buildTextviewTable("KVDB - " + count, sb, model, lines.toString(), model.lookupConversation().isTextViewNumbers(), true, true);

@@ -9,6 +9,7 @@ import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.http.Cookie;
 
@@ -138,9 +139,11 @@ public class BasicApplication extends AbstractResponsible {
 			}
 
 			String hash = Crypto.encryptLoginCredentials(user, pass1);
+			String secret = Security.cleanUpKvSubKey(UUID.randomUUID().toString());
 
 			KVMemoryMap.getInstance().writeKeyValue("user." + user, "FALSE", false);
 			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pass", hash, false);
+			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".loginTokenSecret", secret, false);
 			KVMemoryMap.getInstance().save();
 
 			logger.info("User/Passwort generiert fuer: " + user);
@@ -867,7 +870,7 @@ public class BasicApplication extends AbstractResponsible {
 		table.addTD(StringUtils.left(model.getSessionID(), 10), 1, null);
 		table.addNewRow();
 		table.addTD("Login:", 1, null);
-		table.addTD(StringUtils.left(model.getLoginCookieID(), 10), 1, null);
+		table.addTD(StringUtils.left(model.getLoginCookieID().getValue(), 10), 1, null);
 		table.addNewRow();
 		if (model.lookupConversation().getCookiesReadFromRequest() != null && model.isDevelopmentMode()) {
 			for (Cookie cookieReadFromRequest : model.lookupConversation().getCookiesReadFromRequest()) {

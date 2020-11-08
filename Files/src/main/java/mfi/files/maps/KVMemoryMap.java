@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Crypto;
+import mfi.files.logic.Security;
 
 public class KVMemoryMap {
 
@@ -25,6 +26,10 @@ public class KVMemoryMap {
 	private static final String FILE_ENCODING = "UTF-8";
 	private static final String LIST_START = ".[";
 	private static final String LIST_END = "]";
+
+	public static final String KVDB_KEY_BLACKLIST = "temporary.day.login.blacklist.";
+	public static final String KVDB_KEY_LOGINTOKEN = "xtoken.login.";
+	public static final String KVDB_USER_IDENTIFIER = "user.";
 
 	public static final String PREFIX_TEMPORARY = "temporary.";
 	public static final String PREFIX_CRYPTO_ENTRY_ENC = "secureentry_";
@@ -225,19 +230,24 @@ public class KVMemoryMap {
 
 	public boolean writeKeyValue(String key, String value, boolean overwrite) {
 
+		String ckeckedKey = Security.cleanUpKvKey(key);
+		String checkedValue = Security.cleanUpKvValue(value);
+
+		if (!StringUtils.equals(key, ckeckedKey) || !StringUtils.equals(value, checkedValue)) {
+			throw new IllegalArgumentException("illegal key/value pair: " + key + "=" + value);
+		}
+
 		synchronized (monitor) {
 			if (containsKey(key)) {
 				if (overwrite) {
 					kvMap.put(key, value);
 					changeSinceLastSave = true;
-					// logger.info("flag true durch:" + key + " / " + value);
 					return true;
 				} else {
 					return false;
 				}
 			} else {
 				kvMap.put(key, value);
-				// logger.info("flag true durch:" + key + " / " + value);
 				changeSinceLastSave = true;
 				return true;
 			}
@@ -327,12 +337,22 @@ public class KVMemoryMap {
 			synchronized (monitor) {
 				kvMap.remove(key);
 				changeSinceLastSave = true;
-				// logger.info("flag true durch delete:" + key);
 			}
 			return true;
 		} else {
 			return false;
 		}
+	}
+
+	public void deleteByValue(String val, String keyPrefix) {
+
+		List<String> keysToDelete = new LinkedList<>();
+		kvMap.entrySet().stream().forEach(e -> {
+			if (e.getValue().equals(val) && StringUtils.startsWith(e.getKey(), keyPrefix)) {
+				keysToDelete.add(e.getKey());
+			}
+		});
+		keysToDelete.forEach(this::deleteKey);
 	}
 
 	public void deleteKeyRangeStartsWith(String keyRange) {
