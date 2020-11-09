@@ -19,11 +19,11 @@ import org.slf4j.LoggerFactory;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.ServletHelper;
 import mfi.files.maps.KVMemoryMap;
-import mfi.files.model.CheckTokenResult;
 import mfi.files.model.Condition;
 import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.LoginToken;
 import mfi.files.model.Model;
+import mfi.files.model.TokenResult;
 import mfi.files.servlet.FilesMainServlet;
 
 /*
@@ -116,7 +116,7 @@ public class Security {
 	private static void checkCookieAndSessionBeforeLoginFromCookie(Model model) {
 
 		LoginToken token = LoginToken.fromCombinedValue(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()));
-		if (token != null && !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model))) {
+		if (token != null && !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model.getUserAgent()))) {
 			token = null;
 		}
 
@@ -141,8 +141,11 @@ public class Security {
 	public static void handleCorruptLogin(Model model) {
 
 		addCounter(BLACKLIST_CORRUPT_LOGIN);
-		model.lookupConversation().setCondition(Condition.NULL);
-		if (isBlocked(BLACKLIST_CORRUPT_LOGIN)) {
+		if (model != null) {
+			model.lookupConversation().setCondition(Condition.NULL);
+		}
+		if (isBlocked(BLACKLIST_CORRUPT_LOGIN)
+				&& Boolean.parseBoolean(StringUtils.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey("application.allowsLogin")))) {
 			KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVMemoryMap.KVDB_KEY_LOGINTOKEN);
 			logger.warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs.");
 		}
@@ -176,7 +179,7 @@ public class Security {
 		}
 
 		LoginToken token = LoginToken.fromCombinedValue(cookieID);
-		if (token == null || !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model))) {
+		if (token == null || !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model.getUserAgent()))) {
 			return;
 		}
 
@@ -240,12 +243,14 @@ public class Security {
 	}
 
 	private static String kvKeyForCookieToken(LoginToken token, Model model) {
-		return KVMemoryMap.KVDB_KEY_LOGINTOKEN + token.getUser() + "." + FILES_APPLICATION + "." + deviceFromUserAgent(model);
+		return KVMemoryMap.KVDB_KEY_LOGINTOKEN + token.getUser() + "." + FILES_APPLICATION + "."
+				+ deviceFromUserAgent(model.getUserAgent());
 	}
 
-	private static String deviceFromUserAgent(Model model) {
-		String device = cleanUpKvSubKey(model.getUserAgent()).replaceAll("[0-9]", "");
+	public static String deviceFromUserAgent(String userAgent) {
+		String device = cleanUpKvSubKey(userAgent).replaceAll("[0-9]", "");
 		device = StringUtils.replaceEach(device, new String[] { "_", "." }, new String[] { "", "" });
+		device = StringUtils.defaultIfBlank(device, "UnknownBrowser");
 
 		return device;
 	}
@@ -275,7 +280,8 @@ public class Security {
 			KVMemoryMap.getInstance().deleteByValue(model.getLoginCookieID().toKvDbValue(), KVMemoryMap.KVDB_KEY_LOGINTOKEN);
 			model.setLoginCookieID(null);
 			// Loeschen anhand user-agent
-			String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + model.getUser() + "." + FILES_APPLICATION + "." + deviceFromUserAgent(model);
+			String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + model.getUser() + "." + FILES_APPLICATION + "."
+					+ deviceFromUserAgent(model.getUserAgent());
 			if (KVMemoryMap.getInstance().containsKey(key)) {
 				KVMemoryMap.getInstance().deleteKey(key);
 			}
@@ -293,6 +299,7 @@ public class Security {
 	public static boolean authenticateUser(Model model, String user, String pass, String passHash, Map<String, String> parameters) { // NOSONAR
 
 		user = cleanUpKvSubKey(user);
+
 		if (isBlocked(user) || isBlocked(parameters.get(ServletHelper.SERVLET_REMOTE_IP))) {
 			logoffUser(model);
 			logger.warn("Ungueltiger Anmeldeversuch wegen Blacklisting mit {} / {}", user, parameters.get(ServletHelper.SERVLET_REMOTE_IP));
@@ -330,7 +337,12 @@ public class Security {
 	public static boolean checkUserCredentials(String user, String pass) {
 
 		user = cleanUpKvSubKey(user);
-		if (isBlocked(user)) {
+
+		if (StringUtils.isAnyBlank(user, pass)) {
+			return false;
+		}
+
+		if (isBlocked(user) || !isUserActive(user)) {
 			return false;
 		} else {
 			String passHash = Crypto.encryptLoginCredentials(user, pass);
@@ -351,6 +363,11 @@ public class Security {
 
 		user = cleanUpKvSubKey(user);
 		pin = cleanUpKvSubKey(pin);
+
+		if (StringUtils.isAnyBlank(user, pin)) {
+			return false;
+		}
+
 		if (isBlocked(user)) {
 			return false;
 		} else {
@@ -366,11 +383,15 @@ public class Security {
 		}
 	}
 
-	public static String createToken(String user, String pass, String application, String device) {
+	public static TokenResult createToken(String user, String pass, String application, String device) {
 
 		user = cleanUpKvSubKey(user);
 		application = cleanUpKvSubKey(application);
 		device = cleanUpKvSubKey(device);
+
+		if (StringUtils.isAnyBlank(user, application, device)) {
+			return new TokenResult(false, null);
+		}
 
 		if (checkUserCredentials(user, pass)) {
 			LoginToken token = LoginToken.createNew(user);
@@ -378,20 +399,24 @@ public class Security {
 			KVMemoryMap.getInstance().writeKeyValue(key, token.toKvDbValue(), true);
 			logger.debug("created token for key : {}", key);
 			logger.debug("created token value : {}", logger.isDebugEnabled() ? StringUtils.left(token.toKvDbValue(), 100) : "");
-			return token.toKvDbValue();
+			return new TokenResult(true, token.toKvDbValue());
 		}
-		return null;
+		return new TokenResult(false, null);
 	}
 
-	public static CheckTokenResult checkToken(String user, String tokenToCheck, String application, String device, boolean refresh) {
+	public static TokenResult checkToken(String user, String tokenToCheck, String application, String device, boolean refresh) {
 
 		user = cleanUpKvSubKey(user);
 		application = cleanUpKvSubKey(application);
 		device = cleanUpKvSubKey(device);
 		tokenToCheck = cleanUpKvValue(tokenToCheck);
 
-		if (isBlocked(user)) {
-			return new CheckTokenResult(false, null);
+		if (StringUtils.isAnyBlank(user, application, device, tokenToCheck)) {
+			return new TokenResult(false, null);
+		}
+
+		if (isBlocked(user) || !isUserActive(user)) {
+			return new TokenResult(false, null);
 		} else {
 			LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
 			if (token.checkToken(user, application, device)) {
@@ -402,13 +427,14 @@ public class Security {
 					String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
 					KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
 				}
-				return new CheckTokenResult(true, tokenToReturn);
+				return new TokenResult(true, tokenToReturn);
 			} else {
 				addCounter(user);
+				handleCorruptLogin(null);
 				if (logger.isInfoEnabled()) {
 					logger.info("token to ckeck  : {}", StringUtils.left(tokenToCheck, 100));
 				}
-				return new CheckTokenResult(false, null);
+				return new TokenResult(false, null);
 			}
 		}
 	}
@@ -465,14 +491,15 @@ public class Security {
 	private static boolean isBlocked(String itemToCheck) {
 
 		String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCheck;
+		long limit = BLACKLIST_CORRUPT_LOGIN.contentEquals(itemToCheck) ? 12L : 3L;
 
 		if (KVMemoryMap.getInstance().containsKey(key)) {
 			long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
-			if (actualValue > 6L) {
+			if (actualValue >= limit) {
 				logger.warn("Blockiert laut Blacklist: {} = {}", key, actualValue);
-				if (actualValue == 7L) {
+				if (actualValue == limit) {
 					try {
-						Hilfsklasse.sendPushMessage("Blacklisted key: " + itemToCheck);
+						Hilfsklasse.sendPushMessage("Blocked key: " + itemToCheck);
 					} catch (Exception e) {
 						logger.error(e.getLocalizedMessage(), e);
 					}
@@ -488,11 +515,18 @@ public class Security {
 
 	public static boolean isUserActive(String user) {
 
-		String key = KVMemoryMap.KVDB_USER_IDENTIFIER + user;
+		if (StringUtils.isBlank(user)) {
+			return false;
+		}
 
+		if (!Boolean.parseBoolean(StringUtils.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey("application.allowsLogin")))) {
+			return false;
+		}
+
+		String key = KVMemoryMap.KVDB_USER_IDENTIFIER + user;
 		if (KVMemoryMap.getInstance().containsKey(key)) {
 			String value = KVMemoryMap.getInstance().readValueFromKey(key);
-			return (StringUtils.endsWithIgnoreCase(value, "true"));
+			return (StringUtils.endsWithIgnoreCase(value, Boolean.TRUE.toString()));
 		} else {
 			return false;
 		}

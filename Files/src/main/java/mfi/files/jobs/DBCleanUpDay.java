@@ -14,7 +14,7 @@ import mfi.files.model.Job;
 
 @Component
 @FilesJob(cron = "20 0 * * *", failureCountUntilStartLogging = 1, hasCryptoConfig = false)
-public class DBCleanUp extends Job {
+public class DBCleanUpDay extends Job {
 
 	@Override
 	public void runJob() throws IOException {

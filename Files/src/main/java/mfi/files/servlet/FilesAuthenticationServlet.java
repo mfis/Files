@@ -19,11 +19,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import mfi.files.helper.ServletHelper;
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
-import mfi.files.model.CheckTokenResult;
+import mfi.files.model.TokenResult;
 
 @Controller
 public class FilesAuthenticationServlet {
 
+	private static final String PARAM_USERAGENT = "useragent";
 	private static final String PARAM_SECRET = "getSecretForUser";
 	private static final String PARAM_PIN = "pin";
 	private static final String PARAM_REFRESH = "refresh";
@@ -43,15 +44,16 @@ public class FilesAuthenticationServlet {
 		String user = StringUtils.trimToEmpty(request.getParameter(PARAM_USER));
 		String pass = StringUtils.trimToEmpty(request.getParameter(PARAM_PASS));
 		String application = StringUtils.trimToEmpty(request.getParameter(PARAM_APPLICATION));
-		String device = StringUtils.trimToEmpty(request.getParameter(PARAM_DEVICE));
+		String device = lookupDevice(request);
 
 		setResponseParameters(request, response);
 
-		if (checkPass(user, pass, application)) {
+		TokenResult tokenResult = createToken(user, pass, application, device);
+
+		if (tokenResult.isCheckOk()) {
 			response.setStatus(200); // OK
-			String token = Security.createToken(user, pass, application, device);
 			PrintWriter out = response.getWriter();
-			out.write(token);
+			out.write(tokenResult.getNewToken());
 			out.flush();
 		} else {
 			StringBuilder sbLog = new StringBuilder();
@@ -69,12 +71,12 @@ public class FilesAuthenticationServlet {
 		String user = StringUtils.trimToEmpty(request.getParameter(PARAM_USER));
 		String token = StringUtils.trimToEmpty(request.getParameter(PARAM_TOKEN));
 		String application = StringUtils.trimToEmpty(request.getParameter(PARAM_APPLICATION));
-		String device = StringUtils.trimToEmpty(request.getParameter(PARAM_DEVICE));
+		String device = lookupDevice(request);
 		boolean refresh = BooleanUtils.toBoolean(StringUtils.trimToEmpty(request.getParameter(PARAM_REFRESH)));
 
 		setResponseParameters(request, response);
 
-		CheckTokenResult checkTokenResult = ckeckToken(user, token, application, device, refresh);
+		TokenResult checkTokenResult = ckeckToken(user, token, application, device, refresh);
 
 		if (checkTokenResult.isCheckOk()) {
 			response.setStatus(200); // OK
@@ -138,6 +140,15 @@ public class FilesAuthenticationServlet {
 		}
 	}
 
+	public String lookupDevice(HttpServletRequest request) {
+
+		String device = StringUtils.trimToEmpty(request.getParameter(PARAM_DEVICE));
+		if (StringUtils.isNotBlank(device)) {
+			return device;
+		}
+		return StringUtils.trimToEmpty(request.getParameter(PARAM_USERAGENT));
+	}
+
 	public void setResponseParameters(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
 
 		response.setContentType("text/plain");
@@ -183,14 +194,27 @@ public class FilesAuthenticationServlet {
 		}
 	}
 
-	private CheckTokenResult ckeckToken(String user, String token, String application, String device, boolean refresh) {
+	public TokenResult createToken(String user, String pass, String application, String device) {
+
+		if (StringUtils.isBlank(user) || StringUtils.isBlank(pass) || StringUtils.isBlank(application) || StringUtils.isBlank(device)) {
+			return new TokenResult(false, null);
+		}
+
+		if (!checkPass(user, pass, application)) {
+			return new TokenResult(false, null);
+		}
+
+		return Security.createToken(user, pass, application, device);
+	}
+
+	private TokenResult ckeckToken(String user, String token, String application, String device, boolean refresh) {
 
 		if (StringUtils.isBlank(user) || StringUtils.isBlank(token) || StringUtils.isBlank(application) || StringUtils.isBlank(device)) {
-			return new CheckTokenResult(false, null);
+			return new TokenResult(false, null);
 		}
 
 		try {
-			CheckTokenResult checkTokenResult = Security.checkToken(user, token, application, device, refresh);
+			TokenResult checkTokenResult = Security.checkToken(user, token, application, device, refresh);
 			if (refresh && StringUtils.isBlank(checkTokenResult.getNewToken())) {
 				throw new IllegalStateException("failed creating new token");
 			}
@@ -198,7 +222,7 @@ public class FilesAuthenticationServlet {
 
 		} catch (Exception e) {
 			logger.error("Error while TOKEN check: ", e);
-			return new CheckTokenResult(false, null);
+			return new TokenResult(false, null);
 		}
 	}
 }

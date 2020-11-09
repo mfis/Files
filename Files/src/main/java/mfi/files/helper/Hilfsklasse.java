@@ -16,6 +16,7 @@ import java.util.TimeZone;
 import javax.servlet.http.Cookie;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
 import mfi.files.maps.KVMemoryMap;
 import net.pushover.client.MessagePriority;
@@ -199,6 +200,7 @@ public class Hilfsklasse {
 		String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
 
 		if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
+			LoggerFactory.getLogger(Hilfsklasse.class).warn("sendPushMessage DISABLED: {}", text);
 			return;
 		}
 

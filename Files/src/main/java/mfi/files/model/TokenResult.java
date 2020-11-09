@@ -2,7 +2,7 @@ package mfi.files.model;
 
 import java.io.Serializable;
 
-public class CheckTokenResult implements Serializable {
+public class TokenResult implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -10,7 +10,7 @@ public class CheckTokenResult implements Serializable {
 
 	private final String newToken;
 
-	public CheckTokenResult(boolean checkOK, String newToken) {
+	public TokenResult(boolean checkOK, String newToken) {
 		super();
 		this.checkOk = checkOK;
 		this.newToken = newToken;

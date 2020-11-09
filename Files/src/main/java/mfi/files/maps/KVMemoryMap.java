@@ -27,7 +27,7 @@ public class KVMemoryMap {
 	private static final String LIST_START = ".[";
 	private static final String LIST_END = "]";
 
-	public static final String KVDB_KEY_BLACKLIST = "temporary.day.login.blacklist.";
+	public static final String KVDB_KEY_BLACKLIST = "temporary.month.login.blacklist.";
 	public static final String KVDB_KEY_LOGINTOKEN = "xtoken.login.";
 	public static final String KVDB_USER_IDENTIFIER = "user.";
 

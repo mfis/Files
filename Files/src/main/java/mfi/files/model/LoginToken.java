@@ -76,7 +76,7 @@ public class LoginToken implements Serializable {
 		return checkUser(user) && checkUserSecretHash(user) && checkValue(user, application, device);
 	}
 
-	public boolean checkUser(String user) {
+	private boolean checkUser(String user) {
 		return Security.isUserActive(user);
 	}
 
