@@ -439,6 +439,20 @@ public class Security {
 		}
 	}
 
+	public static void deleteToken(String user, String application, String device) {
+
+		user = cleanUpKvSubKey(user);
+		application = cleanUpKvSubKey(application);
+		device = cleanUpKvSubKey(device);
+
+		if (StringUtils.isAnyBlank(user, application, device)) {
+			return;
+		}
+
+		String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
+		KVMemoryMap.getInstance().deleteKey(key);
+	}
+
 	public static String cleanUpKvKey(String subKey) {
 		if (StringUtils.isAllBlank(subKey)) {
 			throw new IllegalArgumentException("key must not be empty");

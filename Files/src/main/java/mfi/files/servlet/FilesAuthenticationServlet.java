@@ -62,7 +62,6 @@ public class FilesAuthenticationServlet {
 			logger.info(sbLog.toString());
 			response.setStatus(401); // Unauthorized
 		}
-
 	}
 
 	@PostMapping("/FilesCheckToken")
@@ -92,7 +91,20 @@ public class FilesAuthenticationServlet {
 			logger.info(sbLog.toString());
 			response.setStatus(401); // Unauthorized
 		}
+	}
 
+	@PostMapping("/FilesDeleteToken")
+	public void filesDeleteToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+		String user = StringUtils.trimToEmpty(request.getParameter(PARAM_USER));
+		String application = StringUtils.trimToEmpty(request.getParameter(PARAM_APPLICATION));
+		String device = lookupDevice(request);
+
+		setResponseParameters(request, response);
+
+		deleteToken(user, application, device);
+
+		response.setStatus(200); // OK
 	}
 
 	@PostMapping("/FilesAuthentication")
@@ -224,5 +236,16 @@ public class FilesAuthenticationServlet {
 			logger.error("Error while TOKEN check: ", e);
 			return new TokenResult(false, null);
 		}
+	}
+
+	private boolean deleteToken(String user, String application, String device) {
+
+		if (StringUtils.isBlank(user) || StringUtils.isBlank(application) || StringUtils.isBlank(device)) {
+			return false;
+		}
+
+		Security.deleteToken(user, application, device);
+		return true;
+
 	}
 }
