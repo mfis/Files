@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
 
+import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 
 public class LoginToken implements Serializable {
@@ -72,7 +73,11 @@ public class LoginToken implements Serializable {
 	}
 
 	public boolean checkToken(String user, String application, String device) {
-		return checkUserSecretHash(user) && checkValue(user, application, device);
+		return checkUser(user) && checkUserSecretHash(user) && checkValue(user, application, device);
+	}
+
+	public boolean checkUser(String user) {
+		return Security.isUserActive(user);
 	}
 
 	private boolean checkValue(String user, String application, String device) {

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.ServletHelper;
 import mfi.files.maps.KVMemoryMap;
+import mfi.files.model.CheckTokenResult;
 import mfi.files.model.Condition;
 import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.LoginToken;
@@ -373,7 +374,7 @@ public class Security {
 
 		if (checkUserCredentials(user, pass)) {
 			LoginToken token = LoginToken.createNew(user);
-			String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "#" + device;
+			String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
 			KVMemoryMap.getInstance().writeKeyValue(key, token.toKvDbValue(), true);
 			logger.debug("created token for key : {}", key);
 			logger.debug("created token value : {}", logger.isDebugEnabled() ? StringUtils.left(token.toKvDbValue(), 100) : "");
@@ -382,7 +383,7 @@ public class Security {
 		return null;
 	}
 
-	public static boolean checkToken(String user, String tokenToCheck, String application, String device) {
+	public static CheckTokenResult checkToken(String user, String tokenToCheck, String application, String device, boolean refresh) {
 
 		user = cleanUpKvSubKey(user);
 		application = cleanUpKvSubKey(application);
@@ -390,24 +391,24 @@ public class Security {
 		tokenToCheck = cleanUpKvValue(tokenToCheck);
 
 		if (isBlocked(user)) {
-			return false;
+			return new CheckTokenResult(false, null);
 		} else {
-			String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
-			String kvdbToken = null;
-			if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)
-					&& KVMemoryMap.getInstance().containsKey(key)) {
-				kvdbToken = KVMemoryMap.getInstance().readValueFromKey(key);
-			}
-			if (StringUtils.isNotBlank(tokenToCheck) && StringUtils.equals(kvdbToken, tokenToCheck)) {
-				return true;
+			LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
+			if (token.checkToken(user, application, device)) {
+				String tokenToReturn = null;
+				if (refresh) {
+					token.refreshValue();
+					tokenToReturn = token.toKvDbValue();
+					String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
+					KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
+				}
+				return new CheckTokenResult(true, tokenToReturn);
 			} else {
 				addCounter(user);
 				if (logger.isInfoEnabled()) {
-					logger.info("token key : {}", key);
 					logger.info("token to ckeck  : {}", StringUtils.left(tokenToCheck, 100));
-					logger.info("token from kvdb : {}", StringUtils.left(kvdbToken, 100));
 				}
-				return false;
+				return new CheckTokenResult(false, null);
 			}
 		}
 	}
