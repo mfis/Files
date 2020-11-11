@@ -1,7 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<groupId>de.fimatas.files</groupId>
+	<artifactId>Files</artifactId>
+	<version>${files.version}</version>
+	<packaging>pom</packaging>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -9,159 +14,44 @@
 		<version>2.3.4.RELEASE</version>
 		<relativePath />
 	</parent>
-
+	
 	<properties>
+		<home.version>1.0</home.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
-	</properties>
+		<maven.compiler.target>1.8</maven.compiler.target>			
+	</properties>	
 
-	<groupId>mfi.files</groupId>
-	<artifactId>files</artifactId>
-	<version>DEV</version>
-	<name>files</name>
-	<url>https://fimatas.de</url>
-
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>commons-net</groupId>
-			<artifactId>commons-net</artifactId>
-			<version>3.5</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.apache.commons</groupId>
-		    <artifactId>commons-text</artifactId>
-		    <version>1.9</version>
-		</dependency>		
-		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.4</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>it.sauronsoftware.cron4j</groupId>
-			<artifactId>cron4j</artifactId>
-			<version>2.2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>com.dropbox.core</groupId>
-			<artifactId>dropbox-core-sdk</artifactId>
-			<version>3.0.6</version>
-		</dependency>
-		<dependency>
-			<groupId>com.backblaze.b2</groupId>
-			<artifactId>b2-sdk-core</artifactId>
-			<version>1.2.0</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.backblaze.b2</groupId>
-			<artifactId>b2-sdk-httpclient</artifactId>
-			<version>1.2.0</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-		    <groupId>com.github.sps.pushover.net</groupId>
-			<artifactId>pushover-client</artifactId>
-			<version>1.0.1-SNAPSHOT</version>
-		</dependency>		
-	</dependencies>
+	<modules>
+		<module>files-application</module>
+	</modules>
 
 	<build>
-		<plugins>
-			<plugin>
-				<groupId>StaticResourceProcessing</groupId>
-				<artifactId>StaticResourceProcessing</artifactId>
-				<version>1.4.0</version>
-				<configuration>
-					<webContentSourceDir>src/main/resources/orig</webContentSourceDir>
-					<webContentDestDir>src/main/resources/static</webContentDestDir>
-					<webContentTempDir>src/main/resources/static/temp</webContentTempDir>
-					<versionsMapFile></versionsMapFile>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>StaticResourceProcessing</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<executable>true</executable>
-				</configuration>
-				<executions>
-					<execution>
-						<id>build-info</id>
-						<goals>
-							<goal>build-info</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-		<finalName>Files</finalName>
 		<pluginManagement>
 			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings 
-					only. It has no influence on the Maven build itself. -->
 				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.8.1</version>
 					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											StaticResourceProcessing
-										</groupId>
-										<artifactId>
-											StaticResourceProcessing
-										</artifactId>
-										<versionRange>
-											[1.2.1,)
-										</versionRange>
-										<goals>
-											<goal>
-												StaticResourceProcessing
-											</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore></ignore>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
+						<source>11</source>
+						<target>11</target>
+					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.0.0-M4</version>
+					<configuration>
+						<includes>
+							<include>**/*Test.java</include>
+						</includes>
+						<forkCount>0</forkCount>
+						<reuseForks>false</reuseForks>
 					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
-
 
 </project>
