@@ -16,7 +16,7 @@
 	</parent>
 	
 	<properties>
-		<home.version>1.0</home.version>
+		<files.version>1.0</files.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -25,6 +25,7 @@
 
 	<modules>
 		<module>files-application</module>
+		<module>files-api</module>
 	</modules>
 
 	<build>
