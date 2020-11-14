@@ -8,10 +8,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import mfi.files.helper.FilesComparator;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.io.FilesFile;

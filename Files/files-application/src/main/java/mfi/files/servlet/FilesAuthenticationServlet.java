@@ -5,26 +5,23 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
-
+import mfi.files.api.TokenResult;
 import mfi.files.helper.ServletHelper;
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
-import mfi.files.model.TokenResult;
 
 @Controller
 public class FilesAuthenticationServlet {
 
-	private static final String PARAM_USERAGENT = "useragent";
+    private static final String PARAM_USERAGENT = "user-agent";
 	private static final String PARAM_SECRET = "getSecretForUser";
 	private static final String PARAM_PIN = "pin";
 	private static final String PARAM_REFRESH = "refresh";
@@ -86,7 +83,7 @@ public class FilesAuthenticationServlet {
 			}
 		} else {
 			StringBuilder sbLog = new StringBuilder();
-			sbLog.append("FilesCheckToken:" + user + StringUtils.left(token, 80));
+            sbLog.append("FilesCheckToken:" + user + StringUtils.substring(token, 0, 80));
 			sbLog.append(" wrong token! - response 401");
 			logger.info(sbLog.toString());
 			response.setStatus(401); // Unauthorized
@@ -158,7 +155,7 @@ public class FilesAuthenticationServlet {
 		if (StringUtils.isNotBlank(device)) {
 			return device;
 		}
-		return StringUtils.trimToEmpty(request.getParameter(PARAM_USERAGENT));
+        return Security.deviceFromUserAgent(request.getParameter(PARAM_USERAGENT));
 	}
 
 	public void setResponseParameters(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
@@ -227,7 +224,7 @@ public class FilesAuthenticationServlet {
 
 		try {
 			TokenResult checkTokenResult = Security.checkToken(user, token, application, device, refresh);
-			if (refresh && StringUtils.isBlank(checkTokenResult.getNewToken())) {
+            if (checkTokenResult.isCheckOk() && refresh && StringUtils.isBlank(checkTokenResult.getNewToken())) {
 				throw new IllegalStateException("failed creating new token");
 			}
 			return checkTokenResult;

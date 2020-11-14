@@ -7,11 +7,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.annotation.Responsible;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.HTMLTable;

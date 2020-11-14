@@ -10,14 +10,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.servlet.http.Cookie;
-
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-
 import it.sauronsoftware.cron4j.Scheduler;
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.ApplicationUtil;
@@ -886,16 +883,6 @@ public class BasicApplication extends AbstractResponsible {
 		}
 		table.addTD("Conversation ID:", 1, null);
 		table.addTD(model.lookupConversation().getConversationID().toString(), 1, null);
-		table.addNewRow();
-		table.addTD("Remote IP:", 1, null);
-		if (model.isWebserverRunsBehindSSLReverseProxy()) {
-			table.addTD("[behind reverse proxy]", 1, null);
-		} else {
-			table.addTD(parameters.get(ServletHelper.SERVLET_REMOTE_IP), 1, null);
-		}
-		table.addNewRow();
-		table.addTD("LocalNetwork:", 1, null);
-		table.addTD(ServletHelper.isLocalNetworkClient(parameters) + "", 1, null);
 		table.addNewRow();
 		table.addTD("Touch / Phone / Tablet:", 1, null);
 		table.addTD(Boolean.toString(model.isClientTouchDevice()) + " / " + Boolean.toString(model.isPhone()) + " / "

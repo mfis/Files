@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 public class UserService {
 
     @Autowired
+    @Qualifier(FilesApiConfiguration.FILES_API_REST_TEMPLATE)
     private RestTemplate restTemplate;
 
     @Value("${authenticationURL}")
@@ -44,80 +46,77 @@ public class UserService {
     }
 
     public boolean checkAuthentication(String user, String pass) {
-        return checkCall(user, pass, null, SecretType.PASSWORD, authURL, false);
+        return call(user, pass, null, DeviceType.NONE, SecretType.PASSWORD, authURL, false).isCheckOk();
     }
 
     public boolean checkPin(String user, String pin) {
-        return checkCall(user, pin, null, SecretType.PIN, authURL, false);
+        return call(user, pin, null, DeviceType.NONE, SecretType.PIN, authURL, false).isCheckOk();
     }
 
-    public boolean checkToken(String user, String token, String device, boolean refresh) {
-        return checkCall(user, token, device, SecretType.TOKEN, tokenCheckURL, refresh);
+    public TokenResult checkToken(String user, String token, String device, DeviceType deviceTypeboolean, boolean refresh) {
+        return call(user, token, device, deviceTypeboolean, SecretType.TOKEN, tokenCheckURL, refresh);
     }
 
-    public boolean deleteToken(String user, String device) {
-        return checkCall(user, null, device, SecretType.NONE, tokenDeleteURL, false);
+    public boolean deleteToken(String user, String device, DeviceType deviceType) {
+        return call(user, null, device, deviceType, SecretType.NONE, tokenDeleteURL, false).isCheckOk();
     }
 
-    public String createAppToken(String user, String pass, String device) {
+    public TokenResult createToken(String user, String pass, String device, DeviceType deviceType) {
+        return call(user, pass, device, deviceType, SecretType.PASSWORD, tokenCreationURL, false);
+    }
+
+
+    private TokenResult call(String user, String secret, String device, DeviceType deviceType, SecretType type, String url,
+            boolean refresh) {
 
         HttpHeaders headers = createHeaders();
-        MultiValueMap<String, String> map = createParameters(user, pass, device, SecretType.PASSWORD, false);
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-
-        try {
-            ResponseEntity<String> responseEntity = restTemplate.postForEntity(tokenCreationURL, request, String.class);
-            if(responseEntity.getStatusCode().is2xxSuccessful()) {
-                return responseEntity.getBody();
-            }
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                return null;
-            } else {
-                logger.error("Checking authentication not successful.(#1)", e);
-            }
-        } catch (Exception e) {
-            logger.error("Checking authentication not successful.(#2)", e);
-        }
-        return null;
-    }
-
-    private boolean checkCall(String user, String secret, String device, SecretType type, String url, boolean refresh) {
-
-        HttpHeaders headers = createHeaders();
-        MultiValueMap<String, String> map = createParameters(user, secret, device, type, refresh);
+        MultiValueMap<String, String> map = createParameters(user, secret, device, deviceType, type, refresh);
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
         try {
             ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, request, String.class);
-            return responseEntity.getStatusCode().is2xxSuccessful();
+            boolean ok = responseEntity.getStatusCode().is2xxSuccessful();
+            String newToken = null;
+            if (ok) {
+                newToken = responseEntity.getBody();
+            }
+            return new TokenResult(ok, newToken);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                return false;
+                return new TokenResult(false, null);
             } else {
                 logger.error("Checking authentication not successful.(#1)", e);
             }
         } catch (Exception e) {
             logger.error("Checking authentication not successful.(#2)", e);
         }
-        return false;
+        return new TokenResult(false, null);
     }
 
-    private MultiValueMap<String, String> createParameters(String user, String secret, String device, SecretType type,
+    private MultiValueMap<String, String> createParameters(String user, String secret, String device, DeviceType deviceType,
+            SecretType type,
             boolean refresh) {
 
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+
         map.add("user", user);
+
         if (secret != null) {
             map.add(type.parameterName, secret);
         }
+
         map.add("application", applicationIdentifier);
-        if (device != null) {
+
+        if (deviceType == DeviceType.APP) {
             map.add("device", device);
+        } else if (deviceType == DeviceType.BROWSER) {
+            map.add("user-agent", device);
         }
+
         if (refresh) {
             map.add("refresh", Boolean.TRUE.toString());
         }
+
         return map;
     }
 

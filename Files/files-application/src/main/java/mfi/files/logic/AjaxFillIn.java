@@ -1,7 +1,6 @@
 package mfi.files.logic;
 
 import org.apache.commons.lang3.StringUtils;
-
 import mfi.files.io.FilesFile;
 import mfi.files.model.Conversation;
 

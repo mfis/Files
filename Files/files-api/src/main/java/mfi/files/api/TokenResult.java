@@ -1,4 +1,4 @@
-package mfi.files.model;
+package mfi.files.api;
 
 import java.io.Serializable;
 

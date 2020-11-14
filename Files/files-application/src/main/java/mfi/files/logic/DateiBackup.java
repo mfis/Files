@@ -7,11 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Filter.IgnoreCase;
 import mfi.files.logic.Filter.Preset;

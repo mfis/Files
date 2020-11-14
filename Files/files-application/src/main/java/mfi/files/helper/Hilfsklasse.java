@@ -12,211 +12,214 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
 import javax.servlet.http.Cookie;
-
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.maps.KVMemoryMap;
 import net.pushover.client.MessagePriority;
-import net.pushover.client.PushoverException;
 import net.pushover.client.PushoverMessage;
 import net.pushover.client.PushoverRestClient;
 import net.pushover.client.Status;
 
 public class Hilfsklasse {
 
-	public final static String DATE_PATTERN_STD = "EEEE, dd.MM.yyyy";
+    public final static String DATE_PATTERN_STD = "EEEE, dd.MM.yyyy";
 
-	public final static String DATE_PATTERN_TS = "dd.MM.yyyy HH:mm:ss";
+    public final static String DATE_PATTERN_TS = "dd.MM.yyyy HH:mm:ss";
 
-	public final static String DATE_PATTERN_TS_FILESYSTEM = "yyyy_MM_dd__HH_mm_ss";
+    public final static String DATE_PATTERN_TS_FILESYSTEM = "yyyy_MM_dd__HH_mm_ss";
 
-	private static DecimalFormat frmt = (DecimalFormat) NumberFormat.getInstance(Locale.GERMAN);
+    private static DecimalFormat frmt = (DecimalFormat) NumberFormat.getInstance(Locale.GERMAN);
 
-	static {
-		frmt.setParseBigDecimal(true);
-	}
+    private static final Logger logger = LoggerFactory.getLogger(Hilfsklasse.class);
 
-	public static SimpleDateFormat lookupSimpleDateFormat(String pattern) {
-		SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.GERMAN);
-		sdf.setTimeZone(TimeZone.getTimeZone(KVMemoryMap.getInstance().readValueFromKey("application.properties.timezone")));
-		return sdf;
-	}
+    static {
+        frmt.setParseBigDecimal(true);
+    }
 
-	public static String tagesDatumAlsString() {
+    public static SimpleDateFormat lookupSimpleDateFormat(String pattern) {
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.GERMAN);
+        sdf.setTimeZone(TimeZone.getTimeZone(KVMemoryMap.getInstance().readValueFromKey("application.properties.timezone")));
+        return sdf;
+    }
 
-		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_STD);
-		return sdf.format(new Date());
-	}
+    public static String tagesDatumAlsString() {
 
-	public static String zeitstempelAlsString() {
+        SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_STD);
+        return sdf.format(new Date());
+    }
 
-		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS);
-		return sdf.format(new Date());
-	}
+    public static String zeitstempelAlsString() {
 
-	public static String zeitstempelAlsDateisystemObjekt() {
+        SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS);
+        return sdf.format(new Date());
+    }
 
-		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS_FILESYSTEM);
-		return sdf.format(new Date());
-	}
+    public static String zeitstempelAlsDateisystemObjekt() {
 
-	public static String zeitstempelAlsString(long ts) {
+        SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS_FILESYSTEM);
+        return sdf.format(new Date());
+    }
 
-		SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS);
-		return sdf.format(new Date(ts));
-	}
+    public static String zeitstempelAlsString(long ts) {
 
-	public static List<String> erstelleDatumsliste(String pattern, int anzahlEintraege, boolean ersterEintragLeer) {
+        SimpleDateFormat sdf = lookupSimpleDateFormat(DATE_PATTERN_TS);
+        return sdf.format(new Date(ts));
+    }
 
-		List<String> list = new LinkedList<String>();
-		GregorianCalendar cal = new GregorianCalendar();
-		SimpleDateFormat sdf = lookupSimpleDateFormat(pattern);
+    public static List<String> erstelleDatumsliste(String pattern, int anzahlEintraege, boolean ersterEintragLeer) {
 
-		if (ersterEintragLeer) {
-			list.add("");
-		}
+        List<String> list = new LinkedList<String>();
+        GregorianCalendar cal = new GregorianCalendar();
+        SimpleDateFormat sdf = lookupSimpleDateFormat(pattern);
 
-		for (int i = 0; i < anzahlEintraege; i++) {
-			list.add(sdf.format(cal.getTime()));
-			cal.add(Calendar.DATE, -1);
-		}
+        if (ersterEintragLeer) {
+            list.add("");
+        }
 
-		return list;
-	}
+        for (int i = 0; i < anzahlEintraege; i++) {
+            list.add(sdf.format(cal.getTime()));
+            cal.add(Calendar.DATE, -1);
+        }
 
-	public static String zeilenumbruecheBereinigen(String str) {
+        return list;
+    }
 
-		int i = 0;
-		while (i != -1) {
-			i = StringUtils.indexOf(str, '\n', i);
-			if (i != -1 && i > 0 && str.charAt(i - 1) != '\r') {
-				String neu = StringUtils.substring(str, 0, i);
-				neu = neu + "\r";
-				neu = neu + StringUtils.substring(str, i);
-				str = neu;
-				i++;
-			}
-			if (i != -1) {
-				i++;
-			}
-		}
-		return str;
-	}
+    public static String zeilenumbruecheBereinigen(String str) {
 
-	public static int countPrintableCharsInSubstring(String source, int startIncl, int stopIncl) {
+        int i = 0;
+        while (i != -1) {
+            i = StringUtils.indexOf(str, '\n', i);
+            if (i != -1 && i > 0 && str.charAt(i - 1) != '\r') {
+                String neu = StringUtils.substring(str, 0, i);
+                neu = neu + "\r";
+                neu = neu + StringUtils.substring(str, i);
+                str = neu;
+                i++;
+            }
+            if (i != -1) {
+                i++;
+            }
+        }
+        return str;
+    }
 
-		if (source == null) {
-			return 0;
-		}
+    public static int countPrintableCharsInSubstring(String source, int startIncl, int stopIncl) {
 
-		if (source.length() <= startIncl) {
-			return 0;
-		}
+        if (source == null) {
+            return 0;
+        }
 
-		if (source.length() <= stopIncl) {
-			stopIncl = source.length() - 1;
-		}
+        if (source.length() <= startIncl) {
+            return 0;
+        }
 
-		char[] chars = source.toCharArray();
+        if (source.length() <= stopIncl) {
+            stopIncl = source.length() - 1;
+        }
 
-		int anz = 0;
-		for (int c = startIncl; c <= stopIncl; c++) {
-			int i = chars[c];
-			if (i > 31 && i < 127) {
-				anz++;
-			}
-		}
+        char[] chars = source.toCharArray();
 
-		return anz;
-	}
+        int anz = 0;
+        for (int c = startIncl; c <= stopIncl; c++) {
+            int i = chars[c];
+            if (i > 31 && i < 127) {
+                anz++;
+            }
+        }
 
-	public static String cookieToString(Cookie cookie) {
+        return anz;
+    }
 
-		StringBuilder sb = new StringBuilder(100);
+    public static String cookieToString(Cookie cookie) {
 
-		sb.append("Cookie");
-		sb.append(" name=" + cookie.getName());
-		sb.append(" value=" + cookie.getValue());
-		sb.append(" domain=" + cookie.getDomain());
-		sb.append(" maxage=" + cookie.getMaxAge());
-		sb.append(" path=" + cookie.getPath());
-		sb.append(" version=" + cookie.getVersion());
-		sb.append(" secure=" + cookie.getSecure());
+        StringBuilder sb = new StringBuilder(100);
 
-		return sb.toString();
-	}
+        sb.append("Cookie");
+        sb.append(" name=" + cookie.getName());
+        sb.append(" value=" + cookie.getValue());
+        sb.append(" domain=" + cookie.getDomain());
+        sb.append(" maxage=" + cookie.getMaxAge());
+        sb.append(" path=" + cookie.getPath());
+        sb.append(" version=" + cookie.getVersion());
+        sb.append(" secure=" + cookie.getSecure());
 
-	public static BigDecimal parseBigDecimal(String s) {
-		try {
-			return (BigDecimal) frmt.parse(s);
-		} catch (ParseException e) {
-			throw new IllegalArgumentException("Wert nicht numerisch:" + s);
-		}
-	}
+        return sb.toString();
+    }
 
-	public static String printBigDecimal(BigDecimal bd) {
-		return frmt.format(bd);
-	}
+    public static BigDecimal parseBigDecimal(String s) {
+        try {
+            return (BigDecimal) frmt.parse(s);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Wert nicht numerisch:" + s);
+        }
+    }
 
-	public static boolean isNumeric(String value) {
+    public static String printBigDecimal(BigDecimal bd) {
+        return frmt.format(bd);
+    }
 
-		value = StringUtils.remove(value, ',');
-		value = StringUtils.remove(value, '.');
-		value = StringUtils.remove(value, ' ');
-		return StringUtils.isNumeric(value) && StringUtils.isNotBlank(value);
-	}
+    public static boolean isNumeric(String value) {
 
-	public static String normalizedString(Object key) {
-		String keyNorm;
-		if (key == null) {
-			keyNorm = null;
-		} else if (key instanceof String) {
-			if (isNumeric((String) key)) {
-				keyNorm = printBigDecimal(parseBigDecimal((String) key));
-			} else {
-				keyNorm = (String) key;
-			}
-		} else {
-			keyNorm = key.toString();
-		}
-		return keyNorm;
-	}
+        value = StringUtils.remove(value, ',');
+        value = StringUtils.remove(value, '.');
+        value = StringUtils.remove(value, ' ');
+        return StringUtils.isNumeric(value) && StringUtils.isNotBlank(value);
+    }
 
-	public static String hashCodeFromTextFileLine(String line) {
+    public static String normalizedString(Object key) {
+        String keyNorm;
+        if (key == null) {
+            keyNorm = null;
+        } else if (key instanceof String) {
+            if (isNumeric((String) key)) {
+                keyNorm = printBigDecimal(parseBigDecimal((String) key));
+            } else {
+                keyNorm = (String) key;
+            }
+        } else {
+            keyNorm = key.toString();
+        }
+        return keyNorm;
+    }
 
-		line = StringUtils.removeStart(line, "?0");
-		line = StringUtils.removeStart(line, "?1");
-		return line.replaceAll("[^a-zA-Z]+", "");
-	}
+    public static String hashCodeFromTextFileLine(String line) {
 
-	public static void sendPushMessage(String text) throws PushoverException {
+        line = StringUtils.removeStart(line, "?0");
+        line = StringUtils.removeStart(line, "?1");
+        return line.replaceAll("[^a-zA-Z]+", "");
+    }
 
-		String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
-		String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
-		String clientName = KVMemoryMap.getInstance().readValueFromKey("application.pushService.clientName");
-		String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
+    public static void sendPushMessage(String text) {
 
-		if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
-			LoggerFactory.getLogger(Hilfsklasse.class).warn("sendPushMessage DISABLED: {}", text);
-			return;
-		}
+        try {
+            String apiToken = KVMemoryMap.getInstance().readValueFromKey("application.pushService.apiToken");
+            String userID = KVMemoryMap.getInstance().readValueFromKey("application.pushService.userID");
+            String clientName = KVMemoryMap.getInstance().readValueFromKey("application.pushService.clientName");
+            String environmentName = KVMemoryMap.getInstance().readValueFromKey("application.environment.name");
 
-		PushoverMessage message = PushoverMessage.builderWithApiToken(apiToken) //
-				.setUserId(userID) //
-				.setDevice(clientName) //
-				.setMessage(text) //
-				.setPriority(MessagePriority.HIGH) //
-				.setTitle(environmentName + " - Files") //
-				.build();
+            if (StringUtils.isAnyBlank(apiToken, userID, clientName)) {
+                LoggerFactory.getLogger(Hilfsklasse.class).warn("sendPushMessage DISABLED: {}", text);
+                return;
+            }
 
-		Status status = null;
-		status = new PushoverRestClient().pushMessage(message);
-		if (status != null && status.getStatus() > 1) {
-			throw new IllegalStateException("Pushover client status=" + status);
-		}
-	}
+            PushoverMessage message = PushoverMessage.builderWithApiToken(apiToken) //
+                .setUserId(userID) //
+                .setDevice(clientName) //
+                .setMessage(text) //
+                .setPriority(MessagePriority.HIGH) //
+                .setTitle(environmentName + " - Files") //
+                .build();
+
+            Status status = null;
+            status = new PushoverRestClient().pushMessage(message);
+            if (status != null && status.getStatus() > 1) {
+                throw new IllegalStateException("Pushover client status=" + status);
+            }
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+        }
+    }
 
 }

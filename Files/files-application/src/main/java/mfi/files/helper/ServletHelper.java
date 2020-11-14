@@ -3,14 +3,11 @@ package mfi.files.helper;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.htmlgen.HTMLUtils;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
@@ -25,7 +22,6 @@ public class ServletHelper {
 	public static final String SERVLET_SESSION_ID = "servlet_session_ID";
 	public static final String SERVLET_ACCEPT_ENCODING = "servlet_accept_encoding";
 	public static final String SERVLET_ACCEPT_LANG = "servlet_accept_lang";
-	public static final String SERVLET_REMOTE_IP = "servlet_remote_ip";
 	public static final String HTTP_PORT = "8080";
 	public static final String HTTPS_PORT = "8443";
 	public static final String STRING_ENCODING_UTF8 = "UTF-8";
@@ -35,29 +31,6 @@ public class ServletHelper {
 	public static final char REQUEST_TYPE_AJAX = 'a';
 	public static final int HTTP_STATUS_CODE_NON_AUTHORITATIVE_RESPONSE = 203;
 	public static final String NON_BREAKING_SPACE = "\u00A0";
-
-	public static boolean isLocalNetworkClient(Map<String, String> parameters) {
-		if (parameters.get(SERVLET_REMOTE_IP).equals("0:0:0:0:0:0:0:1")) {
-			return true;
-		}
-		if (parameters.get(SERVLET_REMOTE_IP).startsWith("192.168.")) {
-			return true;
-		}
-		if (parameters.get(SERVLET_REMOTE_IP).startsWith("10.")) {
-			return true;
-		}
-		if (parameters.get(SERVLET_REMOTE_IP).startsWith("172.")) {
-			String b = StringUtils.left(parameters.get(SERVLET_REMOTE_IP), 7);
-			if (b.equals("172.16.") || b.equals("172.17.") || b.equals("172.18.") || b.equals("172.19.") || b.equals("172.20.")
-					|| b.equals("172.21.") || b.equals("172.22.") || b.equals("172.23.") || b.equals("172.24.") || b.equals("172.25.")
-					|| b.equals("172.26.") || b.equals("172.27.") || b.equals("172.28.") || b.equals("172.29.") || b.equals("172.30.")
-					|| b.equals("172.31.")) {
-				return true;
-			}
-			return true;
-		}
-		return false;
-	}
 
 	public static char lookupAjaxSubmitConfig() {
 		return REQUEST_TYPE_AJAX;
@@ -84,11 +57,11 @@ public class ServletHelper {
 	public static Map<String, String> parseRequest(HttpServletRequest request, HttpSession session, Condition defaultCondition)
 			throws RequestValidationException {
 
-		Map<String, Integer> lengthQuota = new HashMap<String, Integer>();
-		Map<String, Integer> lengthActual = new HashMap<String, Integer>();
+		Map<String, Integer> lengthQuota = new HashMap<>();
+		Map<String, Integer> lengthActual = new HashMap<>();
 
 		Enumeration<String> e = request.getParameterNames();
-		Map<String, String> parameters = new HashMap<String, String>();
+		Map<String, String> parameters = new HashMap<>();
 		while (e.hasMoreElements()) {
 			String key = e.nextElement();
 			String value = request.getParameter(key);
@@ -124,7 +97,6 @@ public class ServletHelper {
 		}
 		parameters.put(ServletHelper.SERVLET_ACCEPT_ENCODING, request.getHeader("Accept-Encoding"));
 		parameters.put(ServletHelper.SERVLET_ACCEPT_LANG, request.getHeader("Accept-Language"));
-		parameters.put(ServletHelper.SERVLET_REMOTE_IP, request.getRemoteAddr());
 
 		if (!parameters.containsKey(HTMLUtils.CONDITION) && defaultCondition != null) {
 			parameters.put(HTMLUtils.CONDITION, defaultCondition.name());

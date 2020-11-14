@@ -6,24 +6,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import mfi.files.api.TokenResult;
 import mfi.files.helper.Hilfsklasse;
-import mfi.files.helper.ServletHelper;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.Condition.AllowedFor;
 import mfi.files.model.LoginToken;
 import mfi.files.model.Model;
-import mfi.files.model.TokenResult;
 import mfi.files.servlet.FilesMainServlet;
 
 /*
@@ -300,11 +296,10 @@ public class Security {
 
 		user = cleanUpKvSubKey(user);
 
-		if (isBlocked(user) || isBlocked(parameters.get(ServletHelper.SERVLET_REMOTE_IP))) {
+        if (isBlocked(user)) {
 			logoffUser(model);
-			logger.warn("Ungueltiger Anmeldeversuch wegen Blacklisting mit {} / {}", user, parameters.get(ServletHelper.SERVLET_REMOTE_IP));
+            logger.warn("Ungueltiger Anmeldeversuch wegen Blacklisting mit User={}", user);
 			addCounter(user);
-			addCounter(parameters.get(ServletHelper.SERVLET_REMOTE_IP));
 			model.lookupConversation().getMeldungen().add(ANMELDEDATEN_SIND_FEHLERHAFT);
 		} else if (!isUserActive(user)) {
 			if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)) {
@@ -327,7 +322,6 @@ public class Security {
 				logoffUser(model);
 				logger.warn("Ungueltiger Anmeldeversuch fuer User={}", user);
 				addCounter(user);
-				addCounter(parameters.get(ServletHelper.SERVLET_REMOTE_IP).replaceAll("[^a-zA-Z0-9]", "_"));
 				model.lookupConversation().getMeldungen().add(ANMELDEDATEN_SIND_FEHLERHAFT);
 			}
 		}
@@ -342,8 +336,10 @@ public class Security {
 			return false;
 		}
 
-		if (isBlocked(user) || !isUserActive(user)) {
-			return false;
+        if (isBlocked(user) || !isUserActive(user)) {
+            addCounter(user);
+            logger.warn("Ungueltiger Anmeldeversuch wegen Blacklisting mit User={}", user);
+            return false;
 		} else {
 			String passHash = Crypto.encryptLoginCredentials(user, pass);
 			if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)
@@ -353,6 +349,7 @@ public class Security {
 							passHash)) {
 				return true;
 			} else {
+                logger.warn("Ungueltiger Anmeldeversuch fuer User={}", user);
 				addCounter(user);
 				return false;
 			}
@@ -512,12 +509,14 @@ public class Security {
 			if (actualValue >= limit) {
 				logger.warn("Blockiert laut Blacklist: {} = {}", key, actualValue);
 				if (actualValue == limit) {
-					try {
 						Hilfsklasse.sendPushMessage("Blocked key: " + itemToCheck);
-					} catch (Exception e) {
-						logger.error(e.getLocalizedMessage(), e);
-					}
 				}
+                if (actualValue >= 100) {
+                    handleCorruptLogin(null);
+                    if (actualValue == 100) {
+                        Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCheck);
+                    }
+                }
 				return true;
 			} else {
 				return false;
