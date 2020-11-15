@@ -197,8 +197,9 @@ public class Security {
 				cookieRenew(model, token);
 			} else {
 				KVMemoryMap.getInstance().deleteKey(keyForCookieToken);
-				logger.error("Re-Login ueber Session-Cookie war NICHT erfolgreich: {} / {}", cookieID, userFromCookie);
-				throw new SecurityException("Re-Login ueber Session-Cookie war nicht erfolgreich!");
+                logger.error("Re-Login ueber Session-Cookie war NICHT erfolgreich: {} / {}", StringUtils.left(cookieID, 100), // NOSONAR
+                    userFromCookie);
+                logoffUser(model);
 			}
 		}
 	}

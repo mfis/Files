@@ -83,7 +83,7 @@ public class FilesAuthenticationServlet {
 			}
 		} else {
 			StringBuilder sbLog = new StringBuilder();
-            sbLog.append("FilesCheckToken:" + user + StringUtils.substring(token, 0, 80));
+            sbLog.append("FilesCheckToken:" + user + " / " + StringUtils.substring(token, 0, 80));
 			sbLog.append(" wrong token! - response 401");
 			logger.info(sbLog.toString());
 			response.setStatus(401); // Unauthorized
