@@ -7,20 +7,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
-import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 
 public class Model implements Serializable {
 
 	private static final String IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT = "isClientTouchDevice() wurde nicht initialisiert!";
+
+    private static final Logger logger = LoggerFactory.getLogger(Model.class);
 	private static final long serialVersionUID = 1L;
 
 	private LoginToken loginCookieID;
@@ -96,7 +95,7 @@ public class Model implements Serializable {
 			} else {
 				synchronized (this) {
 					id = lookupNextConversationID();
-					LoggerFactory.getLogger(Security.class).info("New conversation: {}", id);
+                    logger.debug("New conversation: {}", id);
 					ThreadLocalHelper.setConversationID(id.toString());
 				}
 			}
