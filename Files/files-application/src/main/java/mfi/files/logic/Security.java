@@ -2,6 +2,7 @@ package mfi.files.logic;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import mfi.files.servlet.FilesMainServlet;
  */
 public class Security {
 
+    private static final String UNKNOWN_USER = "UnknownUser";
+
     private static final String FILES_APPLICATION = "de_fimatas_files";
 
     private static final String ANMELDEDATEN_SIND_FEHLERHAFT = "Anmeldedaten sind fehlerhaft.";
@@ -38,7 +41,7 @@ public class Security {
 
     private static final String LOGIN_COOKIE_NAME = "FILESLOGIN";
 
-    private static final String BLACKLIST_CORRUPT_LOGIN = "CorruptLogin";
+    private static final String BLACKLIST_ALLOWED_APPLICATION = "NotAllowedApplication";
 
     private static final Logger logger = LoggerFactory.getLogger(Security.class);
 
@@ -106,16 +109,21 @@ public class Security {
             && (model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ANYBODY)) {
             // Beim Login darf der User und die Session noch leer sein
         } else {
-            if (StringUtils.isEmpty(model.getUser())
+            if (StringUtils.isBlank(model.getUser())
                 || !KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser())) {
                 // Login Cookie nicht gefunden
+                addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
                 logoffUser(model);
-                handleCorruptLogin(model);
             }
         }
     }
 
     private static void checkCookieAndSessionBeforeLoginFromCookie(Model model) {
+
+        if (isBlocked(UNKNOWN_USER)) {
+            logoffUser(model);
+            return;
+        }
 
         LoginToken token =
             LoginToken.fromCombinedValue(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()));
@@ -126,31 +134,18 @@ public class Security {
         // Pruefung: Model in der Session gefunden, aber kein Login-Cookie
         if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && model.isUserAuthenticated()
             && token == null) {
+            addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
             logoffUser(model);
-            if (StringUtils.isNotBlank(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()))) {
-                handleCorruptLogin(model);
-            }
+            return;
         }
 
         // Pruefung: Model aus der Session gehoert nicht dem User laut Login-Cookie (Abgleich der beiden Cookies)
         if (model.isUserAuthenticated() && token != null) {
             if (!StringUtils.equalsIgnoreCase(token.getUser(), model.getUser())) { // NOSONAR
+                addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
+                addCounter(StringUtils.defaultIfBlank(token.getUser(), UNKNOWN_USER));
                 logoffUser(model);
-                handleCorruptLogin(model);
             }
-        }
-    }
-
-    public static void handleCorruptLogin(Model model) {
-
-        addCounter(BLACKLIST_CORRUPT_LOGIN);
-        if (model != null) {
-            model.lookupConversation().setCondition(Condition.NULL);
-        }
-        if (isBlocked(BLACKLIST_CORRUPT_LOGIN) && Boolean
-            .parseBoolean(StringUtils.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey("application.allowsLogin")))) {
-            KVMemoryMap.getInstance().deleteKeyRangeStartsWith(KVMemoryMap.KVDB_KEY_LOGINTOKEN);
-            logger.warn("Loeschen aller Session Cookies aufgrund moegliches BruteForce Angriffs.");
         }
     }
 
@@ -311,6 +306,7 @@ public class Security {
             model.lookupConversation().getMeldungen().add(ANMELDEDATEN_SIND_FEHLERHAFT);
         } else if (!isUserActive(user)) {
             logger.warn("Ungueltiger Anmeldeversuch (authenticateUser) wegen inaktivem User mit User={}", user);
+            addCounter(user);
             if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)) {
                 model.lookupConversation().getMeldungen().add("Der Account ist inaktiv. Bitte den Admin benachrichtigen.");
             } else {
@@ -370,6 +366,22 @@ public class Security {
         }
     }
 
+    public static boolean checkAllowedApplication(String user, String application) {
+
+        if (StringUtils.isBlank(application)) {
+            return false;
+        }
+
+        String allowedApplications = StringUtils.trimToEmpty(
+            KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".allowedApplications"));
+        boolean applicationAllowed = Arrays.asList(StringUtils.split(allowedApplications, ",")).contains(application);
+        if (!applicationAllowed) {
+            logger.warn("Ungueltiger Anmeldeversuch (checkAllowedApplication) fuer User/Applikation={}/{}", user, application);
+            addCounter(BLACKLIST_ALLOWED_APPLICATION);
+        }
+        return applicationAllowed;
+    }
+
     public static boolean checkPin(String user, String pin) {
 
         user = cleanUpKvSubKey(user);
@@ -380,6 +392,12 @@ public class Security {
         }
 
         if (isBlocked(user)) {
+            addCounter(user);
+            logger.warn("Ungueltiger Anmeldeversuch (checkPin) wegen Blacklisting mit User={}", user);
+            return false;
+        } else if (!isUserActive(user)) {
+            addCounter(user);
+            logger.warn("Ungueltiger Anmeldeversuch (checkPin) wegen inaktivem User mit User={}", user);
             return false;
         } else {
             String passHash = Crypto.encryptLoginCredentials(user, pin);
@@ -427,7 +445,13 @@ public class Security {
             return new TokenResult(false, null);
         }
 
-        if (isBlocked(user) || !isUserActive(user)) {
+        if (isBlocked(user)) {
+            addCounter(user);
+            logger.warn("Ungueltiger Anmeldeversuch (checkToken) wegen Blacklisting mit User={}", user);
+            return new TokenResult(false, null);
+        } else if (!isUserActive(user)) {
+            addCounter(user);
+            logger.warn("Ungueltiger Anmeldeversuch (checkToken) wegen inaktivem User mit User={}", user);
             return new TokenResult(false, null);
         } else {
             LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
@@ -442,7 +466,6 @@ public class Security {
                 return new TokenResult(true, tokenToReturn);
             } else {
                 addCounter(user);
-                handleCorruptLogin(null);
                 if (logger.isInfoEnabled()) {
                     logger.info("token to ckeck  : {}", StringUtils.left(tokenToCheck, 100));
                 }
@@ -495,6 +518,7 @@ public class Security {
         model.setUser(null);
         model.lookupConversation().setEditingFile(null);
         model.setVerzeichnisBerechtigungen(new LinkedList<>());
+        model.lookupConversation().setCondition(Condition.NULL);
         model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
         model.setDeleteModelAfterRequest(true);
 
@@ -517,20 +541,18 @@ public class Security {
     private static boolean isBlocked(String itemToCheck) {
 
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCheck;
+        final long LIMIT_BLOCKED = 3;
+        final long LIMIT_PUSH_2 = 40;
 
         if (KVMemoryMap.getInstance().containsKey(key)) {
-            long limit = BLACKLIST_CORRUPT_LOGIN.contentEquals(itemToCheck) ? 12L : 3L;
             long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
-            if (actualValue >= limit) {
+            if (actualValue >= LIMIT_BLOCKED) {
                 logger.warn("Blockiert laut Blacklist: {} = {}", key, actualValue);
-                if (actualValue == limit) {
+                if (actualValue == LIMIT_BLOCKED) {
                     Hilfsklasse.sendPushMessage("Blocked key: " + itemToCheck);
                 }
-                if (actualValue >= 100) {
-                    handleCorruptLogin(null);
-                    if (actualValue == 100) {
-                        Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCheck);
-                    }
+                if (actualValue == LIMIT_PUSH_2) {
+                    Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCheck);
                 }
                 return true;
             }

@@ -31,8 +31,6 @@ public class FilesAuthenticationServlet {
 	private static final String PARAM_PASS = "pass";
 	private static final String PARAM_USER = "user";
 
-	private static final String KVDB_PREFIX_USER = "user.";
-
 	private static Log logger = LogFactory.getLog(FilesAuthenticationServlet.class);
 
 	@PostMapping("/FilesCreateToken")
@@ -127,12 +125,14 @@ public class FilesAuthenticationServlet {
 		if (userAuthenticated) {
 			response.setStatus(200); // OK
 			if (!isPin && StringUtils.isNotBlank(getSecretForUser)) {
-				String canReadSecretFor = KVMemoryMap.getInstance().readValueFromKey(KVDB_PREFIX_USER + user + ".canReadSecretFor");
+                String canReadSecretFor =
+                    KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".canReadSecretFor");
 				if (StringUtils.isNotBlank(canReadSecretFor)) {
 					List<String> allowedSecrets = Arrays.asList(StringUtils.split(canReadSecretFor, ","));
 					if (allowedSecrets.contains(getSecretForUser)) {
 						String secret = KVMemoryMap.getInstance()
-								.readValueFromKey(KVMemoryMap.PREFIX_CRYPTO_ENTRY_DEC + KVDB_PREFIX_USER + getSecretForUser + ".secret");
+                            .readValueFromKey(KVMemoryMap.PREFIX_CRYPTO_ENTRY_DEC + KVMemoryMap.KVDB_USER_IDENTIFIER
+                                + getSecretForUser + ".secret");
 						response.setContentLength(secret.length());
 						PrintWriter out = response.getWriter();
 						out.write(secret);
@@ -177,9 +177,7 @@ public class FilesAuthenticationServlet {
 			boolean credentialsOk = Security.checkUserCredentials(user, pass);
 
 			if (credentialsOk && StringUtils.isNotBlank(application)) {
-				String allowedApplications = StringUtils
-						.trimToEmpty(KVMemoryMap.getInstance().readValueFromKey(KVDB_PREFIX_USER + user + ".allowedApplications"));
-				return Arrays.asList(StringUtils.split(allowedApplications, ",")).contains(application);
+                return Security.checkAllowedApplication(user, application);
 			}
 
 			return credentialsOk;

@@ -4,11 +4,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
-
 import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 
@@ -77,7 +75,7 @@ public class LoginToken implements Serializable {
 	}
 
 	private boolean checkUser(String user) {
-		return Security.isUserActive(user);
+        return StringUtils.equals(user, this.user) && Security.isUserActive(user);
 	}
 
 	private boolean checkValue(String user, String application, String device) {
