@@ -839,13 +839,9 @@ public class BasicApplication extends AbstractResponsible {
 			}
 		}
 
-		String warfilename = KVMemoryMap.getInstance().readValueFromKey("application.warfile");
 		String builddate = KVMemoryMap.getInstance().readValueFromKey("application.builddate");
-		if (warfilename == null) {
-			warfilename = "Development Version";
-		}
-		if (builddate == null) {
-			builddate = "n/v";
+        if (StringUtils.isBlank(builddate)) {
+            builddate = "nicht bekannt";
 		}
 
 		ButtonBar buttonBar = new ButtonBar();
