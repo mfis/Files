@@ -533,7 +533,7 @@ public class Security {
 
     public static void addCounter(String itemToCount) {
 
-        itemToCount = StringUtils.toRootLowerCase(itemToCount);
+        itemToCount = StringUtils.lowerCase(itemToCount);
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCount;
         long value = 1;
 
@@ -555,7 +555,7 @@ public class Security {
 
     private static boolean isBlocked(String itemToCheck) {
 
-        itemToCheck = StringUtils.toRootLowerCase(itemToCheck);
+        itemToCheck = StringUtils.lowerCase(itemToCheck);
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCheck;
 
         if (KVMemoryMap.getInstance().containsKey(key)) {
