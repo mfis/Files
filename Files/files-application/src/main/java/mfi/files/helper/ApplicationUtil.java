@@ -5,12 +5,10 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Properties;
-
 import org.apache.commons.lang3.CharUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Crypto;
 import mfi.files.maps.KVMemoryMap;
@@ -68,7 +66,7 @@ public class ApplicationUtil {
 		}
 	}
 
-	public static String getSystemUptime() throws Exception {
+    public static String getSystemUptime() {
 
 		try {
 			String os = System.getProperty("os.name").toLowerCase();

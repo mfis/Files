@@ -414,6 +414,7 @@ public class Security {
                 return true;
             } else {
                 addCounter(user);
+                logger.warn("Ungueltiger Authentifizierungsversuch (checkPin) wegen falscher PIN fuer User={}", user);
                 return false;
             }
         }
@@ -532,6 +533,7 @@ public class Security {
 
     public static void addCounter(String itemToCount) {
 
+        itemToCount = StringUtils.toRootLowerCase(itemToCount);
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCount;
         long value = 1;
 
@@ -553,6 +555,7 @@ public class Security {
 
     private static boolean isBlocked(String itemToCheck) {
 
+        itemToCheck = StringUtils.toRootLowerCase(itemToCheck);
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCheck;
 
         if (KVMemoryMap.getInstance().containsKey(key)) {

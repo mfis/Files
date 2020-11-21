@@ -38,7 +38,7 @@ public class BasicApplication extends AbstractResponsible {
 	private static final String USERNAME_PATTERN = "[^a-zA-Z0-9_-]";
 
 	@Responsible(conditions = { Condition.NULL, Condition.LOGIN_FORMULAR })
-	public void fjAnmeldeSeite(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAnmeldeSeite(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		ButtonBar buttonBar = new ButtonBar();
 		buttonBar.getButtons().add(new Button("Lizenzen anzeigen / View Licence Attribution", Condition.VIEW_LICENCE_ATTRIBUTION));
@@ -86,7 +86,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_GENERATE_CREDENTIALS_FORM })
-	public void fjAccountAnlegenSeite(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAccountAnlegenSeite(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		ButtonBar buttonBar = new ButtonBar();
 		buttonBar.getButtons().add(new Button("Zur Anmeldeseite", Condition.LOGIN_FORMULAR));
@@ -114,11 +114,14 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_GENERATE_CREDENTIALS })
-	public void fjAnmeldeCredentialsGenerieren(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAnmeldeCredentialsGenerieren(StringBuilder sb, Map<String, String> parameters, Model model)
+            throws IOException {
 
 		String user = StringUtils.trim(parameters.get("new_user"));
 		String pass1 = StringUtils.trim(parameters.get("new_pass1"));
 		String pass2 = StringUtils.trim(parameters.get("new_pass2"));
+
+        user = Security.cleanUpKvSubKey(user);
 
 		if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(pass1) && StringUtils.isNotBlank(pass2)) {
 
@@ -128,8 +131,7 @@ public class BasicApplication extends AbstractResponsible {
 				return;
 			}
 
-			if (KVMemoryMap.getInstance().containsKeyIgnoreCase("user." + user)
-					|| KVMemoryMap.getInstance().containsKeyIgnoreCase("user." + user.replaceAll(USERNAME_PATTERN, ""))) {
+            if (KVMemoryMap.getInstance().containsKeyIgnoreCase(KVMemoryMap.KVDB_USER_IDENTIFIER + user)) {
 				model.lookupConversation().getMeldungen().add("Ein Account mit dem Namen existiert bereits.");
 				model.lookupConversation().setForwardCondition(Condition.LOGIN_GENERATE_CREDENTIALS_FORM);
 				return;
@@ -138,9 +140,10 @@ public class BasicApplication extends AbstractResponsible {
 			String hash = Crypto.encryptLoginCredentials(user, pass1);
 			String secret = Security.cleanUpKvSubKey(UUID.randomUUID().toString());
 
-			KVMemoryMap.getInstance().writeKeyValue("user." + user, "FALSE", false);
-			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pass", hash, false);
-			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".loginTokenSecret", secret, false);
+            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user, "FALSE", false);
+            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".pass", hash, false);
+            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".loginTokenSecret", secret,
+                false);
 			KVMemoryMap.getInstance().save();
 
 			logger.info("User/Passwort generiert fuer: " + user);
@@ -155,7 +158,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_CHANGE_PASS_FORM })
-	public void fjAccountPasswortAendernSeite(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAccountPasswortAendernSeite(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		ButtonBar buttonBar = new ButtonBar();
 		buttonBar.getButtons().add(new Button("Zur Anmeldeseite", Condition.LOGIN_FORMULAR));
@@ -195,13 +198,16 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_CHANGE_PASS })
-	public void fjPasswortAendern(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortAendern(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		String user = StringUtils.trim(parameters.get("pw_change_user"));
 		String passOld = StringUtils.trim(parameters.get("pw_change_old_pw"));
 		String passNew1 = StringUtils.trim(parameters.get("pw_change_new_pass1"));
 		String passNew2 = StringUtils.trim(parameters.get("pw_change_new_pass2"));
 		String pin = StringUtils.trim(parameters.get("pw_change_new_pin"));
+
+        user = Security.cleanUpKvSubKey(user);
+        pin = Security.cleanUpKvSubKey(pin);
 
 		if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(passOld) && StringUtils.isNotBlank(passNew1)
 				&& StringUtils.isNotBlank(passNew2)) {
@@ -219,13 +225,13 @@ public class BasicApplication extends AbstractResponsible {
 			}
 
 			String hashPass = Crypto.encryptLoginCredentials(user, passNew1);
-			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pass", hashPass, true);
+            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".pass", hashPass, true);
 			KVMemoryMap.getInstance().save();
 
 			if (StringUtils.isNotBlank(pin)) {
 				if (pin.length() == 6 && StringUtils.isNumeric(pin)) {
 					String hashPin = Crypto.encryptLoginCredentials(user, pin);
-					KVMemoryMap.getInstance().writeKeyValue("user." + user + ".pin", hashPin, true);
+                    KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".pin", hashPin, true);
 					KVMemoryMap.getInstance().save();
 					model.lookupConversation().getMeldungen().add("Pin-Änderung erfolgreich.");
 				} else {
@@ -254,7 +260,7 @@ public class BasicApplication extends AbstractResponsible {
 			String hash = Crypto.encryptLoginCredentials(user, passNew1);
 			String verification = Security.generateVerificationString();
 
-			KVMemoryMap.getInstance().writeKeyValue("user." + user + ".resetPass",
+            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".resetPass",
 					hash + " # " + verification + " @ " + Hilfsklasse.zeitstempelAlsString(), true);
 			KVMemoryMap.getInstance().save();
 
@@ -271,7 +277,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.ENTER_KVDB_PASSWORD, Condition.SAVE_KVDB_PASSWORD })
-	public void fjKVDBPasswortSetzen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjKVDBPasswortSetzen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (model.lookupConversation().getCondition() == Condition.ENTER_KVDB_PASSWORD) {
 			sb.append(HTMLUtils.buildMenuNar(model, "Applikation freischalten", true, null, false));
@@ -301,7 +307,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.SSL_NOTICE })
-	public void fjSSLHinweis(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjSSLHinweis(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		sb.append(HTMLUtils.buildMenuNar(model, "Files", false, null, false));
 		HTMLTable table = new HTMLTable();
@@ -314,14 +320,14 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.AUTOLOGIN_FROM_COOKIE })
-	public void fjAnmeldungDurchCookie(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAnmeldungDurchCookie(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
 		return;
 	}
 
 	@Responsible(conditions = { Condition.LOGIN })
-	public void fjAnmeldung(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAnmeldung(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (!parameters.containsKey("login_user")) {
 			model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
@@ -338,6 +344,8 @@ public class BasicApplication extends AbstractResponsible {
 		String user = parameters.get("login_user");
 		String pass = parameters.get("login_pass");
 
+        user = Security.cleanUpKvSubKey(user);
+
 		Security.authenticateUser(model, user, pass, null, parameters);
 		if (model.isUserAuthenticated()) {
 			model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
@@ -349,7 +357,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.LOGOFF })
-	public void fjAbmeldungDurchAnwender(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjAbmeldungDurchAnwender(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		model.lookupConversation().getMeldungen().add("Du bist jetzt abgemeldet.");
 		Security.logoffUser(model);
@@ -358,7 +366,7 @@ public class BasicApplication extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.PASSWORD_ASK_ENCRYPT_SERVER_DIRECT_PASSWORD,
 			Condition.PASSWORD_ASK_ENCRYPT_SERVER_HASHED_PASSWORD, Condition.PASSWORD_ASK_ENCRYPT_CLIENT })
-	public void fjPasswortEncryptAbfrage(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortEncryptAbfrage(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		String namePrefix = "";
 		String captionSuffix = "";
@@ -408,7 +416,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.PASSWORD_ASK_DECRYPT_SERVER, Condition.PASSWORD_ASK_DECRYPT_CLIENT })
-	public void fjPasswortDecryptAbfrage(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortDecryptAbfrage(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		String namePrefix = "";
 		String captionSuffix = "";
@@ -458,12 +466,12 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.PASSWORD_CHECK_ENCRYPT_CLIENT })
-	public void fjPasswortPruefenEncryptClient(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortPruefenEncryptClient(StringBuilder sb, Map<String, String> parameters, Model model) {
 		model.lookupConversation().getJavaScriptOnPageLoaded().add("checkClientSideEncryptionPassword();");
 	}
 
 	@Responsible(conditions = { Condition.PASSWORD_CHECK_DECRYPT_CLIENT })
-	public void fjPasswortPruefenDecryptClient(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortPruefenDecryptClient(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		model.lookupConversation().getEditingFile().setClientKnowsPassword(true);
 
@@ -495,7 +503,7 @@ public class BasicApplication extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.PASSWORD_CHECK_DECRYPT_SERVER, Condition.PASSWORD_CHECK_ENCRYPT_SERVER_DIRECT_PASSWORD,
 			Condition.PASSWORD_CHECK_ENCRYPT_SERVER_HASHED_PASSWORD })
-	public void fjPasswortPruefenServer(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPasswortPruefenServer(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		// Die via Hidden Fields durchgeschleiften Parameter uebernehmen, sofern nicht vorhanden
 		Base32 base32 = new Base32();
@@ -512,10 +520,7 @@ public class BasicApplication extends AbstractResponsible {
 				if (!parameters.containsKey(keyOriginal) || StringUtils.equals(keyOriginal, HTMLUtils.CONDITION)) {
 					String valueDecoded = new String(base32.decode(parameters.get(keyString)));
 					parameters.put(keyOriginal, valueDecoded);
-					// Xystem.out.println("durchschleifen rein:" + keyOriginal + " / " + valueDecoded);
 				}
-				// String valueBase32 = new String(base32.decode(parameters.get(key).getBytes()));
-				// sb.append(HTMLUtils.buildHiddenField("pass_routing_" + key, valueBase32));
 			}
 		}
 
@@ -574,7 +579,7 @@ public class BasicApplication extends AbstractResponsible {
 	@Responsible(conditions = { Condition.FS_EDIT_FILE_AFTER_RESET_CLIENT_PW, Condition.FS_VIEW_FILE_AFTER_RESET_CLIENT_PW,
 			Condition.IMAGE_VIEW_FULLSCREEN_AFTER_RESET_CLIENT_PW, Condition.IMAGE_VIEW_WITH_MENU_AFTER_RESET_CLIENT_PW,
 			Condition.FILE_DOWNLOAD_DECRYPTED_AFTER_RESET_CLIENT_PW })
-	public void zurueckNachClientPasswortReset(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void zurueckNachClientPasswortReset(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (model.lookupConversation().isOriginalRequestCondition()) {
 			model.lookupConversation().getEditingFile().setClientKnowsPassword(false);
@@ -603,7 +608,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.FILE_DOWNLOAD_ORIGINAL, Condition.FILE_DOWNLOAD_DECRYPTED })
-	public void fjDownload(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjDownload(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (model.lookupConversation().getCondition().equals(Condition.FILE_DOWNLOAD_DECRYPTED)
 				&& !model.lookupConversation().getEditingFile().isReadable()) {
@@ -667,7 +672,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.SYS_FJ_OPTIONS })
-	public void fjSystemOptionen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjSystemOptionen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		Condition backCondition = null;
 		if (model.lookupConversation().getStepBackCondition() != null && model.lookupConversation().getEditingFile() != null) {
@@ -724,7 +729,8 @@ public class BasicApplication extends AbstractResponsible {
 				new Button("Lizenzen anzeigen / View Licence Attribution", Condition.VIEW_LICENCE_ATTRIBUTION).printForUseInTable(), 3,
 				null);
 		table.addNewRow();
-		boolean admin = StringUtils.equalsIgnoreCase(KVMemoryMap.getInstance().readValueFromKey("user." + model.getUser() + ".isAdmin"),
+        boolean admin = StringUtils.equalsIgnoreCase(
+            KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser() + ".isAdmin"),
 				Boolean.toString(true));
 		if (admin) {
 			table.addTDSource(new Button("Backups", Condition.BACKUPS_START).printForUseInTable(), 3, null);
@@ -740,14 +746,14 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.NEW_USERS })
-	public void fjNewUsers(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjNewUsers(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		sb.append(HTMLUtils.buildMenuNar(model, "Neue Benutzer freischalten", Condition.FS_NAVIGATE, null, false));
 		HTMLTable table = new HTMLTable();
 		List<String> newUsers = new LinkedList<>();
 		newUsers.add("");
 
-		List<String[]> listWithPartKey = KVMemoryMap.getInstance().readListWithPartKey("user.");
+        List<String[]> listWithPartKey = KVMemoryMap.getInstance().readListWithPartKey(KVMemoryMap.KVDB_USER_IDENTIFIER);
 		for (String[] strings : listWithPartKey) {
 			if (!strings[0].contains(".") && strings[1].trim().equalsIgnoreCase(Boolean.FALSE.toString())) {
 				newUsers.add(strings[0].trim());
@@ -764,7 +770,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.UNLOCK_NEW_USER })
-	public void fjUnlockNewUser(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjUnlockNewUser(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		sb.append(HTMLUtils.buildMenuNar(model, "Freischaltung", Condition.FS_NAVIGATE, null, false));
 		String user = parameters.get("newUser").trim().replaceAll(USERNAME_PATTERN, "");
@@ -783,15 +789,19 @@ public class BasicApplication extends AbstractResponsible {
 			table.addTD("Fehler! Benutzerverzeichnis besteht bereits!", null);
 			table.addNewRow();
 		} else {
-			boolean kv1 = KVMemoryMap.getInstance().writeKeyValue("user." + user + ".allowedDirectory", userdir.getAbsolutePath(), false);
-			boolean kv2 = KVMemoryMap.getInstance().writeKeyValue("user." + user + ".favoriteFolders", userdir.getAbsolutePath(), false);
-			boolean kv3 = KVMemoryMap.getInstance().writeKeyValue("user." + user + ".homeDirectory", userdir.getAbsolutePath(), false);
+            boolean kv1 = KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".allowedDirectory",
+                userdir.getAbsolutePath(), false);
+            boolean kv2 = KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".favoriteFolders",
+                userdir.getAbsolutePath(), false);
+            boolean kv3 = KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".homeDirectory",
+                userdir.getAbsolutePath(), false);
 			if (kv1 && kv2 && kv3) {
 				boolean mkdirs = userdir.mkdirs();
 				if (mkdirs) {
 					table.addTD("Benutzerverzeichnis = " + userdir.getAbsolutePath(), null);
 					table.addNewRow();
-					boolean writeKeyValue = KVMemoryMap.getInstance().writeKeyValue("user." + user, Boolean.TRUE.toString(), true);
+                    boolean writeKeyValue = KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user,
+                        Boolean.TRUE.toString(), true);
 					if (writeKeyValue) {
 						table.addTD("Freischaltung erfolgreich!", null);
 						table.addNewRow();
@@ -815,7 +825,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.SYS_SYSTEM_INFO, Condition.SYS_EXECUTE_JOB })
-	public void fjSystemInfo(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjSystemInfo(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (model.lookupConversation().getCondition().equals(Condition.SYS_EXECUTE_JOB)) {
 			String executeJob = StringUtils.trimToEmpty(parameters.get("execute_job"));
@@ -989,7 +999,7 @@ public class BasicApplication extends AbstractResponsible {
 	}
 
 	@Responsible(conditions = { Condition.VIEW_LICENCE_ATTRIBUTION })
-	public void fjLizenzbedingungenAnzeigen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjLizenzbedingungenAnzeigen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		Condition back;
 		if (model.lookupConversation().getStepBackCondition() != null) {
