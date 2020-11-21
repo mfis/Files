@@ -35,9 +35,11 @@ import mfi.files.model.Model;
 @Component
 public class BasicApplication extends AbstractResponsible {
 
-	private static final String USERNAME_PATTERN = "[^a-zA-Z0-9_-]";
+	private static final String FORMULAR_FIELD_NEW_USER = "new_user";
+    private static final String FORMULAR_FIELD_LOGIN_PASS = "login_pass";
+    private static final String FORMULAR_FIELD_LOGIN_USER = "login_user";
 
-	@Responsible(conditions = { Condition.NULL, Condition.LOGIN_FORMULAR })
+    @Responsible(conditions = { Condition.NULL, Condition.LOGIN_FORMULAR })
     public void fjAnmeldeSeite(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		ButtonBar buttonBar = new ButtonBar();
@@ -45,8 +47,6 @@ public class BasicApplication extends AbstractResponsible {
 
 		if (model.isUserAuthenticated() && model.lookupConversation().getCondition().equals(Condition.NULL)) {
 			// Neue Conversation
-			// Schnellstart
-			// schnellstartLeiste(sb, model);
 			// Weiterleiten zum normalen Menü
 			model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
 		} else {
@@ -56,12 +56,12 @@ public class BasicApplication extends AbstractResponsible {
 			table.addNewRow();
 			table.addTD("Name: ", 1, null);
 			table.addNewRow();
-			table.addTDSource(HTMLUtils.buildTextField("login_user", "", 20, Condition.LOGIN), 1, null);
-			HTMLUtils.setFocus("login_user", model);
+			table.addTDSource(HTMLUtils.buildTextField(FORMULAR_FIELD_LOGIN_USER, "", 20, Condition.LOGIN), 1, null);
+			HTMLUtils.setFocus(FORMULAR_FIELD_LOGIN_USER, model);
 			table.addNewRow();
 			table.addTD("Passwort: ", 1, null);
 			table.addNewRow();
-			table.addTDSource(HTMLUtils.buildPasswordField("login_pass", "", 20, Condition.LOGIN, true), 1, null);
+			table.addTDSource(HTMLUtils.buildPasswordField(FORMULAR_FIELD_LOGIN_PASS, "", 20, Condition.LOGIN, true), 1, null);
 			table.addNewRow();
 			table.addTD("Cookie-Information", 1, HTMLTable.TABLE_HEADER);
 			table.addNewRow();
@@ -95,8 +95,8 @@ public class BasicApplication extends AbstractResponsible {
 		HTMLTable table = new HTMLTable();
 		table.addTD("Neuer Name: ", 1, null);
 		table.addNewRow();
-		table.addTDSource(HTMLUtils.buildTextField("new_user", "", 20, null), 1, null);
-		HTMLUtils.setFocus("new_user", model);
+		table.addTDSource(HTMLUtils.buildTextField(FORMULAR_FIELD_NEW_USER, "", 20, null), 1, null);
+		HTMLUtils.setFocus(FORMULAR_FIELD_NEW_USER, model);
 		table.addNewRow();
 		table.addTD("Neues Passwort: ", 1, null);
 		table.addNewRow();
@@ -117,7 +117,7 @@ public class BasicApplication extends AbstractResponsible {
     public void fjAnmeldeCredentialsGenerieren(StringBuilder sb, Map<String, String> parameters, Model model)
             throws IOException {
 
-		String user = StringUtils.trim(parameters.get("new_user"));
+		String user = StringUtils.trim(parameters.get(FORMULAR_FIELD_NEW_USER));
 		String pass1 = StringUtils.trim(parameters.get("new_pass1"));
 		String pass2 = StringUtils.trim(parameters.get("new_pass2"));
 
@@ -329,7 +329,7 @@ public class BasicApplication extends AbstractResponsible {
 	@Responsible(conditions = { Condition.LOGIN })
     public void fjAnmeldung(StringBuilder sb, Map<String, String> parameters, Model model) {
 
-		if (!parameters.containsKey("login_user")) {
+		if (!parameters.containsKey(FORMULAR_FIELD_LOGIN_USER)) {
 			model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
 			return;
 		}
@@ -341,8 +341,8 @@ public class BasicApplication extends AbstractResponsible {
 			return;
 		}
 
-		String user = parameters.get("login_user");
-		String pass = parameters.get("login_pass");
+		String user = parameters.get(FORMULAR_FIELD_LOGIN_USER);
+		String pass = parameters.get(FORMULAR_FIELD_LOGIN_PASS);
 
         user = Security.cleanUpKvSubKey(user);
 
@@ -773,7 +773,7 @@ public class BasicApplication extends AbstractResponsible {
     public void fjUnlockNewUser(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		sb.append(HTMLUtils.buildMenuNar(model, "Freischaltung", Condition.FS_NAVIGATE, null, false));
-		String user = parameters.get("newUser").trim().replaceAll(USERNAME_PATTERN, "");
+        String user = Security.cleanUpKvSubKey(parameters.get("newUser"));
 		HTMLTable table = new HTMLTable();
 		table.addTD("Benutzername = " + user, null);
 		table.addNewRow();
