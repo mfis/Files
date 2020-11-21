@@ -5,11 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.htmlgen.Button;
@@ -159,7 +157,8 @@ public class KVDBEditor extends AbstractResponsible {
 		for (String zeile : filtered) {
 			String[] strings = StringUtils.split(zeile, '=');
 			String key = strings[0];
-			String val = StringUtils.startsWith(strings[0], KVMemoryMap.KVDB_KEY_LOGINTOKEN) ? StringUtils.left(strings[1], 100) + "..."
+            String val = StringUtils.startsWith(strings[0], KVMemoryMap.KVDB_KEY_LOGINTOKEN)
+                ? StringUtils.left(strings[1], 50) + "..."
 					: strings[1];
 			lines.append(key + " = " + val + "\n");
 		}
