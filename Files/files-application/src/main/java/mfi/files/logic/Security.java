@@ -533,15 +533,22 @@ public class Security {
     public static void addCounter(String itemToCount) {
 
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCount;
-        String value = "1";
+        long value = 1;
 
         if (KVMemoryMap.getInstance().containsKey(key)) {
             long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
-            value = String.valueOf(++actualValue);
+            value = actualValue + 1;
         }
 
-        KVMemoryMap.getInstance().writeKeyValue(key, value, true);
+        KVMemoryMap.getInstance().writeKeyValue(key, String.valueOf(value), true);
         logger.warn("Schreibe Blacklist fuer {} = {}", key, value);
+
+        if (value == LIMIT_BLOCKED) {
+            Hilfsklasse.sendPushMessage("Blocked key: " + itemToCount);
+        }
+        if (value == LIMIT_PUSH_2) {
+            Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCount);
+        }
     }
 
     private static boolean isBlocked(String itemToCheck) {
@@ -552,12 +559,6 @@ public class Security {
             long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
             if (actualValue >= LIMIT_BLOCKED) {
                 logger.warn("Blockiert laut Blacklist: {} = {}", key, actualValue);
-                if (actualValue == LIMIT_BLOCKED) {
-                    Hilfsklasse.sendPushMessage("Blocked key: " + itemToCheck);
-                }
-                if (actualValue == LIMIT_PUSH_2) {
-                    Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCheck);
-                }
                 return true;
             }
         }
