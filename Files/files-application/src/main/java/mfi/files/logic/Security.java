@@ -43,6 +43,10 @@ public class Security {
 
     private static final String BLACKLIST_ALLOWED_APPLICATION = "NotAllowedApplication";
 
+    private static final long LIMIT_BLOCKED = 3;
+
+    private static final long LIMIT_PUSH_2 = 40;
+
     private static final Logger logger = LoggerFactory.getLogger(Security.class);
 
     private Security() {
@@ -128,6 +132,7 @@ public class Security {
         LoginToken token =
             LoginToken.fromCombinedValue(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()));
         if (token != null && !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model.getUserAgent()))) {
+            addCounter(StringUtils.defaultIfBlank(token.getUser(), UNKNOWN_USER));
             token = null;
         }
 
@@ -305,6 +310,7 @@ public class Security {
             addCounter(user);
             model.lookupConversation().getMeldungen().add(ANMELDEDATEN_SIND_FEHLERHAFT);
         } else if (!isUserActive(user)) {
+            logoffUser(model);
             logger.warn("Ungueltiger Anmeldeversuch (authenticateUser) wegen inaktivem User mit User={}", user);
             addCounter(user);
             if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)) {
@@ -541,8 +547,6 @@ public class Security {
     private static boolean isBlocked(String itemToCheck) {
 
         String key = KVMemoryMap.KVDB_KEY_BLACKLIST + itemToCheck;
-        final long LIMIT_BLOCKED = 3;
-        final long LIMIT_PUSH_2 = 40;
 
         if (KVMemoryMap.getInstance().containsKey(key)) {
             long actualValue = Long.parseLong(KVMemoryMap.getInstance().readValueFromKey(key));
@@ -607,7 +611,9 @@ public class Security {
             return false;
         } else {
             String path = null;
-            if (file.getParentFile() == null) {
+            if (file.isDirectory()) {
+                path = file.getAbsolutePath();
+            } else if (file.getParentFile() == null) {
                 path = file.getAbsolutePath();
             } else {
                 path = file.getParentFile().getAbsolutePath();
