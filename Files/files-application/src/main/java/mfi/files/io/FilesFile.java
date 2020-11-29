@@ -16,7 +16,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -25,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.SatzEinfuegenHelper;
 import mfi.files.helper.ThreadLocalHelper;
@@ -35,6 +33,7 @@ import mfi.files.logic.Filter;
 import mfi.files.logic.Filter.IgnoreCase;
 import mfi.files.logic.Filter.Preset;
 import mfi.files.logic.MetaTagParser;
+import mfi.files.logic.Security;
 import mfi.files.maps.FileMap;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.CategoryMarker;
@@ -149,9 +148,10 @@ public class FilesFile extends File {
 
 	public String dateiNameUndPfadEscaped() {
 		String rep = dateiNameUndPfadKlartext();
-		rep = StringUtils.replace(rep, "/", "#");
-		rep = StringUtils.replace(rep, ".", "_");
+        rep = StringUtils.replace(rep, "/", "_");
+        rep = StringUtils.replace(rep, ".", "-");
 		rep = StringUtils.replace(rep, "=", "-");
+        rep = Security.cleanUpKvSubKey(rep);
 		return rep;
 	}
 
