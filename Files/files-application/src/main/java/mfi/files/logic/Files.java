@@ -84,6 +84,12 @@ public class Files {
 			if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && !model.isUserAuthenticated()) {
 				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getCondition().toString());
 
+            } else if (model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ADMIN
+                && !StringUtils.equalsIgnoreCase(
+                    KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser() + ".isAdmin"),
+                    Boolean.toString(true))) {
+                throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getCondition().toString());
+
 			} else if (model.lookupConversation().getEditingFile() != null
 					&& !Security.isFileAllowedForUser(model, model.lookupConversation().getEditingFile())) {
 				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getEditingFile());
