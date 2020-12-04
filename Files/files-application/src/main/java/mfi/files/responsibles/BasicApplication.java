@@ -298,7 +298,8 @@ public class BasicApplication extends AbstractResponsible {
 				model.lookupConversation().setForwardCondition(Condition.FS_NAVIGATE);
 			} else {
 				model.lookupConversation().getMeldungen().add("Das eingegebene Passwort war nicht korrekt.");
-				Security.addCounter(model.getUser());
+                logger.warn("Ungueltige Eingabe kvdb Passwort mit User={}", model.getUser());
+                Security.addCounter(model.getUser());
 				model.lookupConversation().setForwardCondition(Condition.ENTER_KVDB_PASSWORD);
 			}
 		}
@@ -564,7 +565,9 @@ public class BasicApplication extends AbstractResponsible {
 			} else {
 				// Zurueck zur Eingabe
 				model.lookupConversation().getMeldungen().add("Mit dem eingegebenen Passwort konnte die Datei nicht entschlüsselt werden.");
-				Security.addCounter(model.getUser());
+                logger.warn("Ungueltiges Passwort fuer Datei-Entschluesselung: {} / {}", model.getUser(),
+                    model.lookupConversation().getEditingFile().dateiNameKlartext()); // NOSONAR
+                Security.addCounter(model.getUser());
 				model.lookupConversation().setForwardCondition(Condition.PASSWORD_ASK_DECRYPT_SERVER);
 				return;
 			}
@@ -583,8 +586,11 @@ public class BasicApplication extends AbstractResponsible {
 
 		if (model.lookupConversation().isOriginalRequestCondition()) {
 			model.lookupConversation().getEditingFile().setClientKnowsPassword(false);
-			model.lookupConversation().getMeldungen().add("Mit dem eingegebenen Passwort konnte die Datei nicht entschlüsselt werden.");
-			Security.addCounter(model.getUser());
+            model.lookupConversation().getMeldungen()
+                .add("Mit dem eingegebenen Passwort konnte die Datei nicht entschlüsselt werden.");
+            logger.warn("Ungueltige Eingabe Passwort fuer Client-verschluesselte Datei: User / Datei= {} / {}", model.getUser(),
+                model.lookupConversation().getEditingFile().dateiNameKlartext()); // NOSONAR
+            Security.addCounter(model.getUser());
 		}
 		switch (model.lookupConversation().getCondition()) {
 		case FS_EDIT_FILE_AFTER_RESET_CLIENT_PW:

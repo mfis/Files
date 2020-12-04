@@ -116,6 +116,7 @@ public class Security {
             if (StringUtils.isBlank(model.getUser())
                 || !KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser())) {
                 // Login Cookie nicht gefunden
+                logger.warn("checkUserLogin: User nicht angemeldet oder nicht bekannt: {}", model.getUser());
                 addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
                 logoffUser(model);
             }
@@ -132,6 +133,7 @@ public class Security {
         LoginToken token =
             LoginToken.fromCombinedValue(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()));
         if (token != null && !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model.getUserAgent()))) {
+            logger.warn("Token ungueltig: {}", token);
             addCounter(StringUtils.defaultIfBlank(token.getUser(), UNKNOWN_USER));
             token = null;
         }
@@ -139,6 +141,7 @@ public class Security {
         // Pruefung: Model in der Session gefunden, aber kein Login-Cookie
         if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && model.isUserAuthenticated()
             && token == null) {
+            logger.warn("Model in der Session gefunden, aber kein Login-Cookie: {}", model.lookupConversation().getCondition());
             addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
             logoffUser(model);
             return;
@@ -147,6 +150,8 @@ public class Security {
         // Pruefung: Model aus der Session gehoert nicht dem User laut Login-Cookie (Abgleich der beiden Cookies)
         if (model.isUserAuthenticated() && token != null) {
             if (!StringUtils.equalsIgnoreCase(token.getUser(), model.getUser())) { // NOSONAR
+                logger.warn("Model aus der Session gehoert nicht dem User laut Login-Cookie: {} / {}", token.getUser(),
+                    model.getUser());
                 addCounter(StringUtils.defaultIfBlank(model.getUser(), UNKNOWN_USER));
                 addCounter(StringUtils.defaultIfBlank(token.getUser(), UNKNOWN_USER));
                 logoffUser(model);
@@ -349,12 +354,12 @@ public class Security {
         }
 
         if (isBlocked(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkUserCredentials) wegen Blacklisting mit User={}", user);
+            addCounter(user);
             return false;
         } else if (!isUserActive(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkUserCredentials) wegen inaktivem User mit User={}", user);
+            addCounter(user);
             return false;
         } else {
             String passHash = Crypto.encryptLoginCredentials(user, pass);
@@ -398,12 +403,12 @@ public class Security {
         }
 
         if (isBlocked(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkPin) wegen Blacklisting mit User={}", user);
+            addCounter(user);
             return false;
         } else if (!isUserActive(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkPin) wegen inaktivem User mit User={}", user);
+            addCounter(user);
             return false;
         } else {
             String passHash = Crypto.encryptLoginCredentials(user, pin);
@@ -413,8 +418,8 @@ public class Security {
                     KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".pin"), passHash)) {
                 return true;
             } else {
-                addCounter(user);
                 logger.warn("Ungueltiger Authentifizierungsversuch (checkPin) wegen falscher PIN fuer User={}", user);
+                addCounter(user);
                 return false;
             }
         }
@@ -453,12 +458,12 @@ public class Security {
         }
 
         if (isBlocked(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkToken) wegen Blacklisting mit User={}", user);
+            addCounter(user);
             return new TokenResult(false, null);
         } else if (!isUserActive(user)) {
-            addCounter(user);
             logger.warn("Ungueltiger Anmeldeversuch (checkToken) wegen inaktivem User mit User={}", user);
+            addCounter(user);
             return new TokenResult(false, null);
         } else {
             LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
@@ -472,10 +477,8 @@ public class Security {
                 }
                 return new TokenResult(true, tokenToReturn);
             } else {
+                logger.warn("checkToken: Token ungueltig: {}", token);
                 addCounter(user);
-                if (logger.isInfoEnabled()) {
-                    logger.info("token to ckeck  : {}", StringUtils.left(tokenToCheck, 100));
-                }
                 return new TokenResult(false, null);
             }
         }

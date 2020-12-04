@@ -70,6 +70,12 @@ public class LoginToken implements Serializable {
 		return StringUtils.join(new String[] { user, tsString, userSecretHash, value }, SEPARATOR_CHAR);
 	}
 
+    @Override
+    public String toString() {
+        String tsString = timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return StringUtils.join(new String[] {user, tsString, userSecretHash}, SEPARATOR_CHAR);
+    }
+
 	public boolean checkToken(String user, String application, String device) {
 		return checkUser(user) && checkUserSecretHash(user) && checkValue(user, application, device);
 	}
