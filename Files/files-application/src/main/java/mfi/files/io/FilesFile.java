@@ -43,7 +43,10 @@ import mfi.files.model.TextFileMetaTagName;
 
 public class FilesFile extends File {
 
-	private static final long serialVersionUID = 1L;
+    public static final String APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY =
+        "application.properties.cipherFileNameCryptoKey";
+
+    private static final long serialVersionUID = 1L;
 
 	public static final String VERSION_DATE_PATTERN = "yyyy_MM_dd-HHmmssSSS";
 	public final static int BLOCK_SIZE = 8192;
@@ -90,6 +93,7 @@ public class FilesFile extends File {
 	}
 
 	public String dateiNameKlartext() {
+        try {
 		if (isServerCryptedDirectPassword()) {
 			return lookupNameDecryptedServerDirectPassword();
 		} else if (isServerCryptedHashedPassword()) {
@@ -99,6 +103,10 @@ public class FilesFile extends File {
 		} else {
 			return getName();
 		}
+    } catch (Exception e) {
+        logger.error("Fehler bei dateiNameKlartext():", e);
+        return null;
+    }
 	}
 
 	public boolean isFileSystemRoot() {
@@ -126,18 +134,18 @@ public class FilesFile extends File {
 			if (StringUtils.equalsIgnoreCase(lookupCipherFileSuffixServerDirectPassword(), StringUtils.substringAfterLast(string, "."))) {
 				decrypted = decrypted + File.separatorChar
 						+ Crypto.decryptDateiName(string,
-								KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+								KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 								lookupCipherFileSuffixServerDirectPassword());
 			} else if (StringUtils.equalsIgnoreCase(lookupCipherFileSuffixServerHashedPassword(),
 					StringUtils.substringAfterLast(string, "."))) {
 				decrypted = decrypted + File.separatorChar
 						+ Crypto.decryptDateiName(string,
-								KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+								KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 								lookupCipherFileSuffixServerHashedPassword());
 			} else if (StringUtils.equalsIgnoreCase(lookupCipherFileSuffixClient(), StringUtils.substringAfterLast(string, "."))) {
 				decrypted = decrypted + File.separatorChar
 						+ Crypto.decryptDateiName(string,
-								KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+								KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 								lookupCipherFileSuffixClient());
 			} else {
 				decrypted = decrypted + File.separatorChar + string;
@@ -248,7 +256,7 @@ public class FilesFile extends File {
 			cryptedDest = file;
 		} else {
 			String nameVerschluesselt = Crypto.encryptDateiName(file.getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixServerDirectPassword());
 			cryptedDest = new FilesFile(file.getParent() + File.separator + nameVerschluesselt);
 		}
@@ -262,7 +270,7 @@ public class FilesFile extends File {
 			cryptedDest = file;
 		} else {
 			String nameVerschluesselt = Crypto.encryptDateiName(file.getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixServerHashedPassword());
 			cryptedDest = new FilesFile(file.getParent() + File.separator + nameVerschluesselt);
 		}
@@ -276,7 +284,7 @@ public class FilesFile extends File {
 			cryptedDest = file;
 		} else {
 			String nameVerschluesselt = Crypto.encryptDateiName(file.getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixClient());
 			cryptedDest = new FilesFile(file.getParent() + File.separator + nameVerschluesselt);
 		}
@@ -303,7 +311,7 @@ public class FilesFile extends File {
 			} else {
 				crypto = crypto + File.separatorChar
 						+ Crypto.encryptDateiName(string,
-								KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+								KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 								lookupCipherFileSuffix);
 			}
 		}
@@ -313,7 +321,7 @@ public class FilesFile extends File {
 
 	public FilesFile verschluesseleDateiServerseitigMitBasisKey() {
 
-		String key = KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey");
+		String key = KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY);
 		prospectivePassword(key);
 
 		return verschluesseleDateiServerseitigDirectPassword(); // hier IMMER DirectPassword !
@@ -323,7 +331,7 @@ public class FilesFile extends File {
 	public FilesFile clientseitigeVerschluesselungNachbereiten(String clientCryptedFileContent) {
 
 		String nameVerschluesselt = Crypto.encryptDateiName(dateiNameKlartext(),
-				KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+				KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 				lookupCipherFileSuffixClient());
 
 		try {
@@ -344,7 +352,7 @@ public class FilesFile extends File {
 	public FilesFile verschluesseleDateiServerseitigDirectPassword() {
 
 		String nameVerschluesselt = Crypto.encryptDateiName(getName(),
-				KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+				KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 				lookupCipherFileSuffixServerDirectPassword());
 
 		return verschluesseleDateiServerseitigInternal(nameVerschluesselt);
@@ -353,7 +361,7 @@ public class FilesFile extends File {
 	public FilesFile verschluesseleDateiServerseitigHashedPassword() {
 
 		String nameVerschluesselt = Crypto.encryptDateiName(getName(),
-				KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+				KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 				lookupCipherFileSuffixServerHashedPassword());
 
 		return verschluesseleDateiServerseitigInternal(nameVerschluesselt);
@@ -516,7 +524,7 @@ public class FilesFile extends File {
 	private String lookupNameDecryptedServerDirectPassword() {
 		if (nameDecrypted == null) {
 			nameDecrypted = Crypto.decryptDateiName(getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixServerDirectPassword());
 		}
 		return nameDecrypted;
@@ -525,7 +533,7 @@ public class FilesFile extends File {
 	private String lookupNameDecryptedServerHashedPassword() {
 		if (nameDecrypted == null) {
 			nameDecrypted = Crypto.decryptDateiName(getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixServerHashedPassword());
 		}
 		return nameDecrypted;
@@ -534,7 +542,7 @@ public class FilesFile extends File {
 	private String lookupNameDecryptedClient() {
 		if (nameDecrypted == null) {
 			nameDecrypted = Crypto.decryptDateiName(getName(),
-					KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"),
+					KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY),
 					lookupCipherFileSuffixClient());
 		}
 		return nameDecrypted;
@@ -683,7 +691,7 @@ public class FilesFile extends File {
 
 	public boolean isServerBaseCrypted() { // hier IMMER DirectPassword
 		return isServerCryptedDirectPassword()
-				&& pendingPassword(KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"));
+				&& pendingPassword(KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY));
 	}
 
 	private static boolean isServerCryptedDirectPassword(FilesFile otherFile) {
@@ -718,7 +726,7 @@ public class FilesFile extends File {
 		String filename = StringUtils.removeEnd(getName(), "." + TYPE_SUFFIX_DOWNLOADED_CRYPTO_FILE + end);
 
 		String nameVerschluesselt = Crypto.encryptDateiName(filename,
-				KVMemoryMap.getInstance().readValueFromKey("application.properties.cipherFileNameCryptoKey"), end);
+				KVMemoryMap.getInstance().readValueFromKey(APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY), end);
 		return new FilesFile(getParent() + File.separator + nameVerschluesselt);
 
 	}

@@ -1,6 +1,7 @@
 package mfi.files.responsibles;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,14 +26,32 @@ import mfi.files.model.Model;
 @Component
 public class KVDBEditor extends AbstractResponsible {
 
+    private static final String COVER_DOTS = StringUtils.leftPad("", 3, Character.toString((char) 0x00b7));
+
+    private static final String SEL_VALUE = "sel_value";
+
+    private static final String SEL_KEY = "sel_key";
+
+    private static final String NEG_FILTER = "neg_filter";
+
+    private static final String POS_FILTER = "pos_filter";
+
+    private static final List<String> COVER_VALUE_TOKEN_PREFIX = List.of(KVMemoryMap.KVDB_KEY_LOGINTOKEN);
+
+    private static final List<String> COVER_VALUE_COMPLETE_PREFIX =
+        List.of(FilesFile.APPLICATION_PROPERTIES_CIPHER_FILE_NAME_CRYPTO_KEY, KVMemoryMap.PREFIX_CRYPTO_ENTRY_ENC);
+
+    private static final List<String> COVER_VALUE_COMPLETE_SUFFIX =
+        List.of(".loginTokenSecret", ".pass", ".pin", ".resetPass", ".apiToken");
+
 	@Responsible(conditions = { Condition.KVDB_EDIT_START, Condition.KVDB_EDIT, Condition.KVDB_DELETE, Condition.KVDB_INSERT,
 			Condition.KVDB_RESET })
-	public void backup(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void backup(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
-		String posFilter = StringUtils.trimToEmpty(parameters.get("pos_filter"));
-		String negFilter = StringUtils.trimToEmpty(parameters.get("neg_filter"));
-		String selKey = StringUtils.trimToEmpty(parameters.get("sel_key"));
-		String selValue = StringUtils.trimToEmpty(parameters.get("sel_value"));
+		String posFilter = StringUtils.trimToEmpty(parameters.get(POS_FILTER));
+		String negFilter = StringUtils.trimToEmpty(parameters.get(NEG_FILTER));
+		String selKey = StringUtils.trimToEmpty(parameters.get(SEL_KEY));
+		String selValue = StringUtils.trimToEmpty(parameters.get(SEL_VALUE));
 		List<String> inhalt = KVMemoryMap.getInstance().dumpAsList();
 		List<String> filtered = filter(inhalt, posFilter, negFilter);
 
@@ -96,11 +115,11 @@ public class KVDBEditor extends AbstractResponsible {
 		tableFilter.addTD("Filter", 2, HTMLTable.TABLE_HEADER);
 		tableFilter.addNewRow();
 		tableFilter.addTD("Positiv: ", 1, null);
-		tableFilter.addTDSource(HTMLUtils.buildTextField("pos_filter", posFilter, 30, Condition.KVDB_EDIT_START), 1, null);
-		HTMLUtils.setFocus("pos_filter", model);
+		tableFilter.addTDSource(HTMLUtils.buildTextField(POS_FILTER, posFilter, 30, Condition.KVDB_EDIT_START), 1, null);
+		HTMLUtils.setFocus(POS_FILTER, model);
 		tableFilter.addNewRow();
 		tableFilter.addTD("Negativ: ", 1, null);
-		tableFilter.addTDSource(HTMLUtils.buildTextField("neg_filter", negFilter, 30, Condition.KVDB_EDIT_START), 1, null);
+		tableFilter.addTDSource(HTMLUtils.buildTextField(NEG_FILTER, negFilter, 30, Condition.KVDB_EDIT_START), 1, null);
 		tableFilter.addNewRow();
 		sb.append(tableFilter.buildTable(model));
 
@@ -110,10 +129,10 @@ public class KVDBEditor extends AbstractResponsible {
 			tableAuswahl.addTD("Auswahl (einzeln)", 2, HTMLTable.TABLE_HEADER);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTD("Key: ", 1, null);
-			tableAuswahl.addTDSource(HTMLUtils.buildTextField("sel_key", keyValue[0], 30, null), 1, null);
+			tableAuswahl.addTDSource(HTMLUtils.buildTextField(SEL_KEY, keyValue[0], 30, null), 1, null);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTD("Value: ", 1, null);
-			tableAuswahl.addTDSource(HTMLUtils.buildTextField("sel_value", keyValue[1], 30, null), 1, null);
+			tableAuswahl.addTDSource(HTMLUtils.buildTextField(SEL_VALUE, keyValue[1], 30, null), 1, null);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTDSource(new Button("ändern", Condition.KVDB_EDIT, true).printForUseInTable(), 2, HTMLTable.NO_BORDER);
 			tableAuswahl.addNewRow();
@@ -136,10 +155,10 @@ public class KVDBEditor extends AbstractResponsible {
 			tableAuswahl.addTD("Einfügen", 2, HTMLTable.TABLE_HEADER);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTD("Key: ", 1, null);
-			tableAuswahl.addTDSource(HTMLUtils.buildTextField("sel_key", "", 30, null), 1, null);
+			tableAuswahl.addTDSource(HTMLUtils.buildTextField(SEL_KEY, "", 30, null), 1, null);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTD("Value: ", 1, null);
-			tableAuswahl.addTDSource(HTMLUtils.buildTextField("sel_value", "", 30, null), 1, null);
+			tableAuswahl.addTDSource(HTMLUtils.buildTextField(SEL_VALUE, "", 30, null), 1, null);
 			tableAuswahl.addNewRow();
 			tableAuswahl.addTDSource(new Button("einfügen", Condition.KVDB_INSERT, true).printForUseInTable(), 2, HTMLTable.NO_BORDER);
 			tableAuswahl.addNewRow();
@@ -156,10 +175,8 @@ public class KVDBEditor extends AbstractResponsible {
 		StringBuilder lines = new StringBuilder();
 		for (String zeile : filtered) {
 			String[] strings = StringUtils.split(zeile, '=');
-			String key = strings[0];
-            String val = StringUtils.startsWith(strings[0], KVMemoryMap.KVDB_KEY_LOGINTOKEN)
-                ? StringUtils.left(strings[1], 50) + "..."
-					: strings[1];
+            String key = strings[0].trim();
+            String val = coverValue(strings).trim();
 			lines.append(key + " = " + val + "\n");
 		}
 
@@ -167,27 +184,54 @@ public class KVDBEditor extends AbstractResponsible {
 
 	}
 
+    public String coverValue(String[] strings) {
+
+        String key = strings[0].trim();
+
+        for (String prefix : COVER_VALUE_TOKEN_PREFIX) {
+            if (key.startsWith(prefix)) {
+                return COVER_DOTS
+                    + StringUtils.substringAfter(
+                        StringUtils.substringBeforeLast(StringUtils.substringBeforeLast(strings[1], "*"), "*"), "*")
+                    + COVER_DOTS;
+            }
+        }
+        
+        for (String prefix : COVER_VALUE_COMPLETE_PREFIX) {
+            if (key.startsWith(prefix)) {
+                return COVER_DOTS;
+            }
+        }
+
+        for (String suffix : COVER_VALUE_COMPLETE_SUFFIX) {
+            if (key.endsWith(suffix)) {
+                return COVER_DOTS;
+            }
+        }
+
+        return strings[1];
+    }
+
 	private List<String> filter(List<String> list, String posFilter, String negFilter) {
 
-		Set<String> in = new HashSet<String>();
+        Set<String> in = new HashSet<>();
 		if (StringUtils.isNotBlank(posFilter)) {
 			in.add(posFilter);
 		}
-		Set<String> ex = new HashSet<String>();
+        Set<String> ex = new HashSet<>();
 		if (StringUtils.isNotBlank(negFilter)) {
 			ex.add(negFilter);
 		}
 
-		List<String> filtered = Filter.filter(list, in, ex, Preset.CONTAINS, IgnoreCase.YES);
-
-		return filtered;
+        return Filter.filter(list, in, ex, Preset.CONTAINS, IgnoreCase.YES);
 	}
 
 	private void writeLog(String s) {
 
 		FilesFile logFile = new FilesFile(KVMemoryMap.getInstance().readValueFromKey("application.kvdblog"));
 		try {
-			FileUtils.writeStringToFile(logFile, Hilfsklasse.zeitstempelAlsString() + " " + s + "\n", "UTF-8", true);
+            FileUtils.writeStringToFile(logFile, Hilfsklasse.zeitstempelAlsString() + " " + s + "\n",
+                StandardCharsets.UTF_8.displayName(), true);
 		} catch (IOException e) {
 			throw new IllegalStateException("Could not write to KV Log:", e);
 		}
