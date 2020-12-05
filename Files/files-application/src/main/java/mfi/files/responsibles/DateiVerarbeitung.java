@@ -1,13 +1,12 @@
 package mfi.files.responsibles;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-
 import mfi.files.annotation.Responsible;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.HTMLTable;
@@ -25,7 +24,7 @@ import mfi.files.model.Model;
 public class DateiVerarbeitung extends AbstractResponsible {
 
 	@Responsible(conditions = { Condition.FS_VIEW_OPTIONS })
-	public void fjFileSystemOptionen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjFileSystemOptionen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		int breiteEingabefeld = model.isPhone() ? 30 : 50;
 
@@ -174,11 +173,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			table.addNewRow();
 		}
 		sb.append(table.buildTable(model));
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_FILE_ENCRYPT_CLIENT_START })
-	public void fjVerschluesselnClientStart(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjVerschluesselnClientStart(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		if (!model.lookupConversation().getEditingFile().isReadable()) {
 			// passwort benoetigt? Dann erstmal zur Passwortmaske weiterleiten
@@ -197,11 +195,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		if (!renameOK) {
 			model.lookupConversation().getMeldungen().add("Ursprungsdatei konnte nicht gelöscht werden.");
 		}
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_FILE_ENCRYPT_CLIENT_END })
-	public void fjVerschluesselnClientEnde(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjVerschluesselnClientEnde(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		FilesFile cryptoFileNameForFile = FilesFile
 				.lookupClientCryptoFileNameForFile(new FilesFile(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext()));
@@ -213,11 +210,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 
 		model.lookupConversation().setEditingFile(null);
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_FILE_ENCRYPT_SERVER })
-	public void fjVerschluesselnServer(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjVerschluesselnServer(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		if (model.lookupConversation().getEditingFile().isPasswordPending()) {
 			FilesFile newFile = model.lookupConversation().getEditingFile().verschluesseleDateiServerseitigHashedPassword();
@@ -225,15 +221,13 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			newFile.backupFile(model);
 			model.lookupConversation().setEditingFile(null);
 			model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-			return;
 		} else {
 			model.lookupConversation().setForwardCondition(Condition.PASSWORD_ASK_ENCRYPT_SERVER_HASHED_PASSWORD);
-			return;
 		}
 	}
 
 	@Responsible(conditions = { Condition.FS_FILE_DECRYPT_SERVER })
-	public void fjEntschluesselnServer(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjEntschluesselnServer(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		if (model.lookupConversation().getEditingFile().isReadable()) {
 			FilesFile newFile = model.lookupConversation().getEditingFile().entschluesseleDateiServerseitig();
@@ -241,15 +235,13 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			newFile.backupFile(model);
 			model.lookupConversation().setEditingFile(null);
 			model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-			return;
 		} else {
 			model.lookupConversation().setForwardCondition(Condition.PASSWORD_ASK_DECRYPT_SERVER);
-			return;
 		}
 	}
 
 	@Responsible(conditions = { Condition.FS_COPY_FILE_CLIP, Condition.FS_MOVE_FILE_CLIP })
-	public void fjZwischenablageVerarbeiten(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjZwischenablageVerarbeiten(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		FilesFile processSource = new FilesFile(model.getZwischenablage());
 		String processTargetDir = model.lookupConversation().getEditingFile().getAbsolutePath();
@@ -268,11 +260,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 
 		model.setZwischenablage(null);
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_COPY_FILE_SAME_DIR })
-	public void fjDateiKopieren(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjDateiKopieren(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		String dateiname = parameters.get("rename_copy");
 		FilesFile newFile = model.lookupConversation().getEditingFile().copyFile(model,
@@ -282,19 +273,17 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			newFile.aktualisiereAenderer(model.getUser());
 		}
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_TO_CLIPBOARD })
-	public void fjZwischenablageSetzen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjZwischenablageSetzen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		model.setZwischenablage(model.lookupConversation().getEditingFile().getAbsolutePath());
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_NEW_FOLDER })
-	public void fjNeuerOrdner(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjNeuerOrdner(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (!model.lookupConversation().getEditingFile().isDirectory()) {
 			model.lookupConversation().getMeldungen().add("Neues Dateisystemobjekt nur in Verzeichnissen anlegbar!");
@@ -310,11 +299,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		}
 
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_NEW_FILE })
-	public void fjNeueDatei(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjNeueDatei(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		if (model.lookupConversation().getEditingFile().isDirectory()) {
 
@@ -335,11 +323,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			model.lookupConversation().getEditingFile().aktualisiereAenderer(model.getUser());
 		}
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_RENAME })
-	public void fjDateiUmbenennen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjDateiUmbenennen(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		String dateiname = parameters.get("rename_copy");
 		if (StringUtils.isEmpty(dateiname)) {
@@ -348,12 +335,6 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		}
 
 		FilesFile newFile = new FilesFile(model.lookupConversation().getEditingFile().getParent() + FilesFile.separator + dateiname);
-		// Condition forward = model.lookupConversation().getEditingFile().isRenameableWithNewName(newFile,
-		// Condition.PASSWORD_ASK_ENCRYPT_SERVER, Condition.PASSWORD_ASK_DECRYPT_SERVER);
-		// if (forward != null) {
-		// model.lookupConversation().setForwardCondition(forward);
-		// return;
-		// }
 
 		if (model.lookupConversation().getEditingFile().isServerCryptedDirectPassword()) {
 			newFile = FilesFile.lookupServerCryptoFileNameForFileDirectPassword(newFile);
@@ -379,11 +360,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 		newFile.backupFile(model);
 
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_DELETE_FILE })
-	public void fjDateiLoeschen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjDateiLoeschen(StringBuilder sb, Map<String, String> parameters, Model model) throws IOException {
 
 		try {
 			if (model.lookupConversation().getEditingFile().isDirectory()) {
@@ -400,20 +380,18 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			model.lookupConversation().getMeldungen().add(e.getMessage());
 		}
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_GOTO })
-	public void fjDateiSystemWechselnZu(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjDateiSystemWechselnZu(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		String gotoFolder = parameters.get("gotoFolder").trim();
 		model.lookupConversation().setVerzeichnis(gotoFolder);
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_NAVIGATE })
-	public void fjFileSystemNavigation(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjFileSystemNavigation(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		if (model.lookupConversation().getEditingFile() != null) {
 			if (model.lookupConversation().getEditingFile().isDirectory()) {
@@ -421,21 +399,21 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			} else {
 				model.lookupConversation().setVerzeichnis(model.lookupConversation().getEditingFile().getParent());
 			}
+        } else {
+            model.lookupConversation().setVerzeichnis(null);
 		}
 		model.lookupConversation().setForwardCondition(Condition.FS_FILE_LISTING);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_SWITCH_VIEW_DETAILS })
-	public void fjPushSetzen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjPushSetzen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		model.lookupConversation().setFilesystemViewDetails(!model.lookupConversation().isFilesystemViewDetails());
 		model.lookupConversation().setForwardCondition(Condition.SYS_FJ_OPTIONS);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.FS_FILE_LISTING })
-	public void fjFileSystemAnzeigen(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void fjFileSystemAnzeigen(StringBuilder sb, Map<String, String> parameters, Model model) {
 
 		sb.append(HTMLUtils.buildMenuNar(model, "Dateisystem", false, null, false));
 
@@ -477,7 +455,7 @@ public class DateiVerarbeitung extends AbstractResponsible {
 
 	private void fileSystemHeader(Model model, boolean details, HTMLTable table) {
 
-		List<String> iconList = new LinkedList<String>();
+        List<String> iconList = new LinkedList<>();
 		String textClassContrast = "dark";
 
 		if (model.lookupConversation().getVerzeichnis() == null) {
@@ -495,10 +473,10 @@ public class DateiVerarbeitung extends AbstractResponsible {
 			int header = -1;
 			for (FilesFile file : model.lookupConversation().getFsListe()) {
 
-				if (file.isParentOf(new FilesFile(model.lookupConversation().getVerzeichnis()))) {
+                if (file == null || file.isParentOf(new FilesFile(model.lookupConversation().getVerzeichnis()))) {
 
 					String name = null;
-					if (Security.isDirectoryAllowedForUser(model, file.getAbsolutePath())) {
+                    if (file != null && Security.isDirectoryAllowedForUser(model, file.getAbsolutePath())) {
 						if (file.isFileSystemRoot()) {
 							name = "root";
 						} else {
@@ -538,7 +516,7 @@ public class DateiVerarbeitung extends AbstractResponsible {
 
 	private void fileSystemObject(Model model, boolean details, HTMLTable table, int j, int rowID, boolean isUebersicht, FilesFile file) {
 
-		List<String> iconList = new LinkedList<String>();
+        List<String> iconList = new LinkedList<>();
 		String cssClass = rowID % 2 != 0 ? HTMLTable.TABLE_TOP : HTMLTable.TABLE_ALT_TOP;
 		boolean editable = !file.isDirectory() && file.isEditableFileType();
 		boolean viewableImage = !file.isDirectory() && file.isViewableImageType();

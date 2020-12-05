@@ -18,6 +18,10 @@ import mfi.files.model.Model;
 
 public class DateiZugriff {
 
+    private DateiZugriff() {
+        super();
+    }
+
 	public static int fileGroesseAlsInt(FilesFile file) {
 		long size = file.length();
 		return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
@@ -35,7 +39,7 @@ public class DateiZugriff {
 
 	public static String speicherGroesseFormatieren(long groesse) {
 
-		final long KILOBYTE_GRENZE = 1024 * 1024;
+        final long KILOBYTE_GRENZE = 1024L * 1024L;
 		final long MEGABYTE_GRENZE = KILOBYTE_GRENZE * 1024;
 
 		if (groesse < KILOBYTE_GRENZE) {
@@ -98,13 +102,14 @@ public class DateiZugriff {
 		}
 	}
 
-	public static LinkedList<FilesFile> lesePfadListe(Model model) {
+    public static List<FilesFile> lesePfadListe(Model model) {
 
-		LinkedList<FilesFile> liste = new LinkedList<FilesFile>();
+        LinkedList<FilesFile> liste = new LinkedList<>();
 
 		boolean uebersichtMoeglich = model.getVerzeichnisBerechtigungen() != null && model.getVerzeichnisBerechtigungen().size() > 1;
 
-		if (uebersichtMoeglich && !Security.isDirectoryAllowedForUser(model, model.lookupConversation().getVerzeichnis())) {
+        if (uebersichtMoeglich && (model.lookupConversation().getVerzeichnis() == null
+            || !Security.isDirectoryAllowedForUser(model, model.lookupConversation().getVerzeichnis()))) {
 			// Verzeichnis-Uebersicht aufbauen
 			model.lookupConversation().setVerzeichnis(null);
 			for (String ber : model.getVerzeichnisBerechtigungen()) {
@@ -118,9 +123,9 @@ public class DateiZugriff {
 
 		FilesFile[] dirs = null;
 
-		List<FilesFile> parents = new LinkedList<FilesFile>();
-		List<FilesFile> folders = new LinkedList<FilesFile>();
-		List<FilesFile> files = new LinkedList<FilesFile>();
+        List<FilesFile> parents = new LinkedList<>();
+        List<FilesFile> folders = new LinkedList<>();
+        List<FilesFile> files = new LinkedList<>();
 
 		if (StringUtils.isNotEmpty(model.lookupConversation().getVerzeichnis())) {
 			File file = new FilesFile(model.lookupConversation().getVerzeichnis());
@@ -155,7 +160,7 @@ public class DateiZugriff {
 				}
 			}
 			if (uebersichtMoeglich) {
-				parents.add(new FilesFile("/")); // Uebersicht Eintrag
+                parents.add(null); // Uebersicht Eintrag
 			}
 		}
 

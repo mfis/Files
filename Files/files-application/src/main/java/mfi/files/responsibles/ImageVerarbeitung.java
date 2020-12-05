@@ -2,9 +2,7 @@ package mfi.files.responsibles;
 
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.stereotype.Component;
-
 import mfi.files.annotation.Responsible;
 import mfi.files.htmlgen.Button;
 import mfi.files.htmlgen.ButtonBar;
@@ -128,14 +126,13 @@ public class ImageVerarbeitung extends AbstractResponsible {
 
 	private int lookupImagePos(Model model, List<FilesFile> list) {
 
-		int aktuell = -1;
 		for (int i = 0; i < list.size(); i++) {
-			if (list.get(i).dateiNameUndPfadKlartext().equals(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext())) {
-				aktuell = i;
-				break;
+            if (list.get(i) != null && list.get(i).dateiNameUndPfadKlartext()
+                .equals(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext())) {
+                return i;
 			}
 		}
-		return aktuell;
+        return -1;
 	}
 
 }

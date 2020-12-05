@@ -21,7 +21,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import mfi.files.helper.Hilfsklasse;
@@ -973,7 +972,7 @@ public class FilesFile extends File {
 
 	public static String linesToString(List<String> zeilen) {
 
-		String separator = SystemUtils.LINE_SEPARATOR;
+        String separator = System.lineSeparator();
 		int len = 0;
 		for (String string : zeilen) {
 			len = len + string.length();

@@ -614,7 +614,9 @@ public class Security {
 
     public static boolean isFileAllowedForUser(Model model, File file) {
 
-        if (model == null || file == null) {
+        if (file == null) {
+            return true;
+        } else if (model == null) {
             return false;
         } else {
             String path = null;

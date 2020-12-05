@@ -13,11 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import mfi.files.helper.ThreadLocalHelper;
 import mfi.files.htmlgen.HTMLUtils;
+import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
 
 public class Model implements Serializable {
 
-	private static final String IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT = "isClientTouchDevice() wurde nicht initialisiert!";
+	private static final String HOME_DIRECTORY = ".homeDirectory";
+
+    private static final String IS_CLIENT_TOUCH_DEVICE_WURDE_NICHT_INITIALISIERT = "isClientTouchDevice() wurde nicht initialisiert!";
 
     private static final Logger logger = LoggerFactory.getLogger(Model.class);
 	private static final long serialVersionUID = 1L;
@@ -103,10 +106,13 @@ public class Model implements Serializable {
 
 		if (!conversations.containsKey(id)) {
 			String startVerzeichnis = null;
+            FilesFile editingFile = null;
 			if (isUserAuthenticated()) {
-				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".homeDirectory");
+				startVerzeichnis = KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + HOME_DIRECTORY);
+                editingFile = new FilesFile(startVerzeichnis);
 			}
 			Conversation newConversation = new Conversation(id, startVerzeichnis);
+            newConversation.setEditingFile(editingFile);
 			newConversation.lookupConditionForRequest(null);
 			newConversation.setTextViewPush(!istTelephone);
 			newConversation.setFilesystemViewDetails(!istTelephone);
@@ -281,11 +287,13 @@ public class Model implements Serializable {
 			// Home
 			if (!isBatch) {
 				lookupConversation().setVerzeichnis(
-						KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".homeDirectory"));
+						KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + HOME_DIRECTORY));
+                lookupConversation().setEditingFile(new FilesFile(lookupConversation().getVerzeichnis()));
 			}
 
 		} else {
 			lookupConversation().setVerzeichnis(null);
+            lookupConversation().setEditingFile(null);
 			setFavoriteFolders(null);
 			setVerzeichnisBerechtigungen(new LinkedList<>());
 		}
