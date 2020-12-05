@@ -99,7 +99,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 		if (aktuell != -1) {
 			if (direction == -1) {
 				for (int i = aktuell; i > -1; i--) {
-					if (!list.get(i).dateiNameUndPfadKlartext()
+                    if (list.get(i) != null && !list.get(i).dateiNameUndPfadKlartext()
 							.equals(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext())) {
 						if (list.get(i).isViewableImageType()) {
 							neu = i;
@@ -111,7 +111,7 @@ public class ImageVerarbeitung extends AbstractResponsible {
 
 			if (direction == +1) {
 				for (int i = aktuell; i < list.size(); i++) {
-					if (!list.get(i).dateiNameUndPfadKlartext()
+                    if (list.get(i) != null && !list.get(i).dateiNameUndPfadKlartext()
 							.equals(model.lookupConversation().getEditingFile().dateiNameUndPfadKlartext())) {
 						if (list.get(i).isViewableImageType()) {
 							neu = i;
