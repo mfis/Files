@@ -1,14 +1,14 @@
 package mfi.files.jobs;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
 import mfi.files.annotation.FilesJob;
 import mfi.files.io.FilesFile;
 import mfi.files.maps.KVMemoryMap;
@@ -33,7 +33,8 @@ public class TempDirCleanUp extends Job {
 
 		File dir = new FilesFile(dirString);
 		if (!dir.exists()) {
-			logger.warn("TempDir nicht gefunden:" + dirString);
+            logger.debug("TempDir nicht gefunden: {}", dirString);
+            return;
 		}
 
 		long nowInMillies = System.currentTimeMillis();
@@ -42,7 +43,11 @@ public class TempDirCleanUp extends Job {
 		for (File file : list) {
 			long fileDateInMillies = file.lastModified();
 			if ((fileDateInMillies + oneDayInMillies) < nowInMillies) {
-				file.delete();
+                try {
+                    Files.deleteIfExists(file.toPath());
+                } catch (IOException e) {
+                    logger.warn("Could not delete temp file {}", file.getAbsolutePath(), e);
+                }
 			}
 		}
 	}
