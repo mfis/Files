@@ -1,9 +1,10 @@
 package mfi.files.logic;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,17 +36,19 @@ public class Files {
 	static {
 		instance = new Files();
 		logger.info("Initializing Files Singleton");
-		map = new HashMap<>();
+        map = new EnumMap<>(Condition.class);
 	}
 
 	private Files() {
-		// private default constructor
+        super();
 	}
 
 	public static void registrateResponsible(Class<? extends AbstractResponsible> clazz) {
 
 		try {
-			Object instance = clazz.newInstance();
+
+            Constructor<?> constructor = clazz.getConstructor();
+            Object instance = constructor.newInstance();
 			Method[] methods = clazz.getDeclaredMethods();
 
 			for (Method method : methods) {
@@ -53,26 +56,32 @@ public class Files {
 				for (Annotation annotation : annotations) {
 					if (annotation instanceof Responsible) {
 						Condition[] conditions = ((Responsible) annotation).conditions();
-						for (Condition condition : conditions) {
-							if (map.containsKey(condition)) {
-								throw new RuntimeException("Doppelter Responsible Eintrag: " + condition.toString());
-							} else {
-								map.put(condition, new ResponsibleMethod(instance, method));
-							}
-						}
+						addConditionToMap(instance, method, conditions);
 					}
 				}
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Responsible Liste konnte nicht erstellt werden.", e);
+            throw new IllegalStateException("Responsible Liste konnte nicht erstellt werden.", e);
 		}
 	}
+
+    public static void addConditionToMap(Object instance, Method method, Condition[] conditions) {
+
+        for (Condition condition : conditions) {
+        	if (map.containsKey(condition)) {
+                throw new IllegalStateException("Doppelter Responsible Eintrag: " + condition.toString());
+        	} else {
+        		map.put(condition, new ResponsibleMethod(instance, method));
+        	}
+        }
+    }
 
 	public static Files getInstance() {
 		return instance;
 	}
 
-	public void files(StringBuilder sb, Map<String, String> parameters, Model model) throws Exception {
+    public void files(StringBuilder sb, Map<String, String> parameters, Model model)
+            throws IllegalAccessException, InvocationTargetException {
 
 		verarbeitungVorbereiten(sb, parameters, model);
 
@@ -81,61 +90,88 @@ public class Files {
 		model.lookupConversation().setOriginalRequestCondition(true);
 
 		do {
-			if (model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && !model.isUserAuthenticated()) {
+			if (checkForConditionMissUser(model)) {
 				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getCondition().toString());
 
-            } else if (model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ADMIN
-                && !StringUtils.equalsIgnoreCase(
-                    KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser() + ".isAdmin"),
-                    Boolean.toString(true))) {
+            } else if (checkForConditionMissAdmin(model)) {
                 throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getCondition().toString());
 
-			} else if (model.lookupConversation().getEditingFile() != null
-					&& !Security.isFileAllowedForUser(model, model.lookupConversation().getEditingFile())) {
+			} else if (checkForMissingFileRights(model)) {
 				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getEditingFile());
 
-			} else if (StringUtils.isNotBlank(model.lookupConversation().getVerzeichnis())
-					&& !Security.isFileAllowedForUser(model, new FilesFile(model.lookupConversation().getVerzeichnis()))) {
+			} else if (checkForMissingDirectoryRights(model)) {
 				throw new IllegalStateException(UNAUTORISIERTER_AUFRUF + model.lookupConversation().getVerzeichnis());
 
 			} else if (map.containsKey(model.lookupConversation().getCondition())) {
 				ResponsibleMethod rm = map.get(model.lookupConversation().getCondition());
-
 				conditionVorbereiten(parameters, model);
 				rm.getMethod().invoke(rm.getClazz(), sb, parameters, model);
 				conditionNachbereiten(model);
-
 			} else {
-				StringBuilder s = new StringBuilder();
-				for (Entry<Condition, ResponsibleMethod> e : map.entrySet()) {
-					s.append("\n\tEntry: ");
-					s.append(e.getKey().name());
-					s.append(" / ");
-					s.append(e.getValue().getClass().getSimpleName());
-				}
-				throw new IllegalStateException("Responsible Methode nicht gefunden fuer: "
-						+ model.lookupConversation().getCondition().toString() + ". Mapping: " + s.toString());
+				handleMissingCondition(model);
 			}
 
-			if (model.lookupConversation().getCondition() != null
-					&& model.lookupConversation().getCondition().getStepBack() == StepBack.YES) {
-				model.lookupConversation().setStepBackCondition(model.lookupConversation().getCondition());
-			} else {
-				model.lookupConversation().setStepBackCondition(null);
-			}
-
+			handleStepBack(model);
 			model.lookupConversation().setCondition(model.lookupConversation().getForwardCondition());
 			model.lookupConversation().setForwardCondition(null);
 			model.lookupConversation().setOriginalRequestCondition(false);
+			iterations = handleLoopCount(model, iterations);
 
-			iterations++;
-			if (iterations > 100) {
-				throw new RuntimeException("Detected infinite loop:" + model.lookupConversation().getCondition());
-			}
 		} while (model.lookupConversation().getCondition() != null);
 
-		setzeMeldungen(sb, posMeldungen, parameters, model);
+        setzeMeldungen(sb, posMeldungen, model);
 	}
+
+    public int handleLoopCount(Model model, int iterations) {
+        iterations++;
+        if (iterations > 100) {
+            throw new IllegalStateException("Detected infinite loop:" + model.lookupConversation().getCondition());
+        }
+        return iterations;
+    }
+
+    public void handleStepBack(Model model) {
+        if (model.lookupConversation().getCondition() != null
+        		&& model.lookupConversation().getCondition().getStepBack() == StepBack.YES) {
+        	model.lookupConversation().setStepBackCondition(model.lookupConversation().getCondition());
+        } else {
+        	model.lookupConversation().setStepBackCondition(null);
+        }
+    }
+
+    private void handleMissingCondition(Model model) {
+
+        StringBuilder s = new StringBuilder();
+        for (Entry<Condition, ResponsibleMethod> e : map.entrySet()) {
+        	s.append("\n\tEntry: ");
+        	s.append(e.getKey().name());
+        	s.append(" / ");
+        	s.append(e.getValue().getClass().getSimpleName());
+        }
+        throw new IllegalStateException("Responsible Methode nicht gefunden fuer: "
+        		+ model.lookupConversation().getCondition().toString() + ". Mapping: " + s.toString());
+    }
+
+    private boolean checkForMissingDirectoryRights(Model model) {
+        return StringUtils.isNotBlank(model.lookupConversation().getVerzeichnis())
+        		&& !Security.isFileAllowedForUser(model, new FilesFile(model.lookupConversation().getVerzeichnis()));
+    }
+
+    private boolean checkForMissingFileRights(Model model) {
+        return model.lookupConversation().getEditingFile() != null
+        		&& !Security.isFileAllowedForUser(model, model.lookupConversation().getEditingFile());
+    }
+
+    private boolean checkForConditionMissAdmin(Model model) {
+        return model.lookupConversation().getCondition().getAllowedFor() == AllowedFor.ADMIN
+            && !StringUtils.equalsIgnoreCase(
+                KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + model.getUser() + ".isAdmin"),
+                Boolean.toString(true));
+    }
+
+    private boolean checkForConditionMissUser(Model model) {
+        return model.lookupConversation().getCondition().getAllowedFor() != AllowedFor.ANYBODY && !model.isUserAuthenticated();
+    }
 
 	private void verarbeitungVorbereiten(StringBuilder sb, Map<String, String> parameters, Model model) {
 
@@ -169,14 +205,12 @@ public class Files {
 
 			if (model.lookupConversation().getCondition().getResets() == Resets.LOCK_BEFORE
 					|| model.lookupConversation().getCondition().getResets() == Resets.LOCK_AND_FILE_BEFORE) {
-
-				if (model.lookupConversation().getEditingFile() != null) {
+                if (model.lookupConversation().getEditingFile() != null) { // NOSONAR
 					model.lookupConversation().getEditingFile().loescheFileLock(model.getUser());
 				}
 			}
 
 			if (model.lookupConversation().getCondition().getResets() == Resets.LOCK_AND_FILE_BEFORE) {
-
 				model.lookupConversation().setEditingFile(null);
 			}
 		}
@@ -188,14 +222,12 @@ public class Files {
 
 			if (model.lookupConversation().getCondition().getResets() == Resets.LOCK_AFTER
 					|| model.lookupConversation().getCondition().getResets() == Resets.LOCK_AND_FILE_AFTER) {
-
-				if (model.lookupConversation().getEditingFile() != null) {
+                if (model.lookupConversation().getEditingFile() != null) { // NOSONAR
 					model.lookupConversation().getEditingFile().loescheFileLock(model.getUser());
 				}
 			}
 
 			if (model.lookupConversation().getCondition().getResets() == Resets.LOCK_AND_FILE_AFTER) {
-
 				model.lookupConversation().setEditingFile(null);
 			}
 		}
@@ -216,9 +248,9 @@ public class Files {
 		return table.buildTable(model);
 	}
 
-	private void setzeMeldungen(StringBuilder sb, int posMeldungen, Map<String, String> parameters, Model model) throws IOException {
+    private void setzeMeldungen(StringBuilder sb, int posMeldungen, Model model) {
 
-		if (model.lookupConversation().getMeldungen().size() > 0) {
+        if (!model.lookupConversation().getMeldungen().isEmpty()) {
 
 			StringBuilder hinweise = new StringBuilder();
 			for (int i = 0; i < model.lookupConversation().getMeldungen().size(); i++) {
@@ -228,15 +260,15 @@ public class Files {
 
 			sb.insert(posMeldungen, "\n " + hinweise.toString() + " \n");
 
-			model.lookupConversation().setMeldungen(new LinkedList<String>());
+            model.lookupConversation().setMeldungen(new LinkedList<>());
 		}
 
 		if (!KVMemoryMap.getInstance().isPasswordForCryptoEntrysSet() && model.getUser() != null) {
-			sb.insert(posMeldungen, "\n " + setzeKVMapPasswortWarnung(model) + " \n");
+            sb.insert(posMeldungen, "\n " + setzeKVMapPasswortWarnung() + " \n");
 		}
 		if (StringUtils.equalsIgnoreCase(KVMemoryMap.getInstance().readValueFromKey("application.unlimitedStrengthCryptoEnabled"),
 				Boolean.FALSE.toString())) {
-			sb.insert(posMeldungen, "\n " + setzeUnlimitedStrengthCryptoWarnung(model) + " \n");
+            sb.insert(posMeldungen, "\n " + setzeUnlimitedStrengthCryptoWarnung() + " \n");
 		}
 
 	}
@@ -246,11 +278,11 @@ public class Files {
 				+ model.lookupConversation().getCondition() + "</a></div>\n";
 	}
 
-	private String setzeUnlimitedStrengthCryptoWarnung(Model model) {
+    private String setzeUnlimitedStrengthCryptoWarnung() {
 		return "<div class=\"noticebanner\">" + "Achtung! UnlimitedStrengthCrypto ist nicht aktiv!" + "</div>\n";
 	}
 
-	private String setzeKVMapPasswortWarnung(Model model) {
+    private String setzeKVMapPasswortWarnung() {
 		return "<div class=\"noticebanner\">" + HTMLUtils.buildConditionSubmitLink(
 				"Achtung! Applikation wurde nach Neustart nicht vollständig freigeschaltet!", Condition.ENTER_KVDB_PASSWORD) + "</div>\n";
 	}

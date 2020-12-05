@@ -2,6 +2,7 @@ package mfi.files.listener;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
@@ -123,7 +124,8 @@ public class FilesContextListener {
 
 			for (Class<? extends Job> clazz : CronSchedulers.getInstance().getJobs()) {
 
-				Object instance = clazz.newInstance();
+                Constructor<? extends Job> constructor = clazz.getConstructor();
+                Object instance = constructor.newInstance();
 				if (instance instanceof Job) {
 
 					Annotation[] annotations = clazz.getDeclaredAnnotations();

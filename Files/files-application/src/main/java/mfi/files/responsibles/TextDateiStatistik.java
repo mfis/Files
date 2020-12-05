@@ -6,10 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
-
 import mfi.files.annotation.Responsible;
 import mfi.files.helper.Hilfsklasse;
 import mfi.files.helper.MapSortHelper;
@@ -279,19 +278,19 @@ public class TextDateiStatistik extends AbstractResponsible {
 					dispersion.get(orderKey).add(resultZeileAvg);
 					break;
 				case "VALS":
-					Map<String, Integer> vals = new LinkedHashMap<String, Integer>();
+                    Map<String, Integer> vals = new LinkedHashMap<>();
 					for (List<String> line : splittedLineGroups.get(orderKey)) {
 						int col = dispColumn.get(i);
 						String val = line.get(col);
 						if (vals.containsKey(val)) {
 							vals.put(val, (vals.get(val)) + 1);
 						} else {
-							vals.put(val, new Integer(1));
+                            vals.put(val, NumberUtils.INTEGER_ONE);
 						}
 					}
 					vals = MapSortHelper.sortByValue(vals);
 					for (String s : vals.keySet()) {
-						List<String> resultZeileVal = new LinkedList<String>();
+                        List<String> resultZeileVal = new LinkedList<>();
 						resultZeileVal.add("\"" + s + "\":");
 						resultZeileVal.add(vals.get(s).toString() + " x");
 						dispersion.get(orderKey).add(resultZeileVal);
