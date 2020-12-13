@@ -133,7 +133,7 @@ public class Security {
         LoginToken token =
             LoginToken.fromCombinedValue(lookupLoginCookie(model.lookupConversation().getCookiesReadFromRequest()));
         if (token != null && !token.checkToken(token.getUser(), FILES_APPLICATION, deviceFromUserAgent(model.getUserAgent()))) {
-            logger.warn("Token ungueltig: {}", token);
+            logger.warn("Files Token ungueltig: {}", token);
             addCounter(StringUtils.defaultIfBlank(token.getUser(), UNKNOWN_USER));
             token = null;
         }
@@ -233,11 +233,13 @@ public class Security {
 
     private static void cookieWrite(Model model) {
 
-        if (model.lookupConversation().getCondition().equals(Condition.LOGIN)) {
+        if (model.lookupConversation().getCondition().equals(Condition.LOGIN)
+            || model.lookupConversation().getCondition().equals(Condition.NULL)) {
 
             LoginToken token = LoginToken.createNew(model.getUser());
             writeCookieIdentifierToKVDB(model, token);
             model.setLoginCookieID(token);
+            logger.info("Files created token value : {}", token);
 
             Cookie cookie = new Cookie(LOGIN_COOKIE_NAME, token.toKvDbValue());
             cookie.setMaxAge(60 * 60 * 24 * 92);
@@ -439,8 +441,7 @@ public class Security {
             LoginToken token = LoginToken.createNew(user);
             String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
             KVMemoryMap.getInstance().writeKeyValue(key, token.toKvDbValue(), true);
-            logger.debug("created token for key : {}", key);
-            logger.debug("created token value : {}", logger.isDebugEnabled() ? StringUtils.left(token.toKvDbValue(), 100) : "");
+            logger.info("created token value : {}", token);
             return new TokenResult(true, token.toKvDbValue());
         }
         return new TokenResult(false, null);
@@ -474,6 +475,7 @@ public class Security {
                     tokenToReturn = token.toKvDbValue();
                     String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
                     KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
+                    logger.info("refreshed token value : {}", token);
                 }
                 return new TokenResult(true, tokenToReturn);
             } else {
@@ -515,10 +517,10 @@ public class Security {
     }
 
     public static String cleanUpKvValue(String subKey) {
-        // erlaubt: a-zA-Z0-9_
+        // erlaubt: a-zA-Z0-9_öäüÖÄÜß
         // zusaetzlich: /.,()[]{}<>!@"*+#- SPACE
         // NICHT =\
-        return subKey == null ? StringUtils.EMPTY : subKey.replaceAll("[^\\x20-\\x3c\\x3e-\\x5b\\x5d-\\x7e]", "").trim();
+        return subKey == null ? StringUtils.EMPTY : subKey.replaceAll("[^\\x20-\\x3c\\x3e-\\x5b\\x5d-\\x7eöäüÖÄÜß]", "").trim();
     }
 
     public static void logoffUser(Model model) {

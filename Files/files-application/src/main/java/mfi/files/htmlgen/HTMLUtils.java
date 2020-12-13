@@ -4,14 +4,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.StringUtils;
-
 import mfi.files.helper.ServletHelper;
 import mfi.files.helper.StringHelper;
 import mfi.files.io.FilesFile;
 import mfi.files.logic.AjaxFillIn;
+import mfi.files.logic.Security;
 import mfi.files.maps.KVMemoryMap;
 import mfi.files.model.Condition;
 import mfi.files.model.Model;
@@ -418,6 +417,7 @@ public class HTMLUtils {
 
 		String token = UUID.randomUUID().toString();
 		token = token + file.dateiNameUndPfadEscaped();
+        token = Security.cleanUpKvSubKey(token);
 		token = new String(new Base32(0).encode(token.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
 		token = StringUtils.remove(token, "=");
 

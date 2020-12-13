@@ -1,6 +1,5 @@
 package mfi.files.servlet;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -32,7 +31,7 @@ public class FilesDownloadServlet {
 	public static final String SERVLETPFAD = "/FilesDownloadServlet";
 	private static Log logger = LogFactory.getLog(FilesDownloadServlet.class);
 
-	public final static String FORCE_DOWNLOAD = "forceDownload";
+    public static final String FORCE_DOWNLOAD = "forceDownload";
 
 	@RequestMapping("/FilesDownloadServlet") // NOSONAR
 	public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception { // NOSONAR
@@ -159,7 +158,7 @@ public class FilesDownloadServlet {
 	}
 
 	private void streamFileTo(HttpServletResponse response, FilesFile file, boolean forceDownload)
-			throws IOException, FileNotFoundException {
+            throws IOException {
 
 		long len = 0;
 		String suffix = null;
