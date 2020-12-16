@@ -479,7 +479,7 @@ public class Security {
                 }
                 return new TokenResult(true, tokenToReturn);
             } else {
-                logger.warn("checkToken: Token ungueltig: {}", token);
+                logger.warn("checkToken: Token ungueltig app:{} dev:{} token:{}", application, device, token);
                 addCounter(user);
                 return new TokenResult(false, null);
             }
