@@ -441,7 +441,7 @@ public class Security {
             LoginToken token = LoginToken.createNew(user);
             String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
             KVMemoryMap.getInstance().writeKeyValue(key, token.toKvDbValue(), true);
-            logger.info("created token value : {}", token);
+            logger.info("created token app:{} dev:{} token:{}", application, device, token);
             return new TokenResult(true, token.toKvDbValue());
         }
         return new TokenResult(false, null);
@@ -475,7 +475,7 @@ public class Security {
                     tokenToReturn = token.toKvDbValue();
                     String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
                     KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
-                    logger.info("refreshed token value : {}", token);
+                    logger.info("refreshed token value: app:{} dev:{} token:{}", application, device, token);
                 }
                 return new TokenResult(true, tokenToReturn);
             } else {
