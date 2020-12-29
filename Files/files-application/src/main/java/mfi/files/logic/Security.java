@@ -478,7 +478,7 @@ public class Security {
             return new TokenResult(false, null);
         } else {
             LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
-            if (token.checkToken(user, application, device)) {
+            if (token != null && token.checkToken(user, application, device)) {
                 String tokenToReturn = null;
                 if (refresh) {
                     token.refreshValue();

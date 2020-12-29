@@ -1,8 +1,10 @@
 package mfi.files.logic;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import junit.framework.TestCase;
+import mfi.files.api.TokenResult;
 import mfi.files.maps.KVMemoryMap;
 
 public class SecurityTest extends TestCase {
@@ -10,6 +12,10 @@ public class SecurityTest extends TestCase {
     private static final String USER = "user";
 
     private static final String PASS = "pass";
+
+    private static final String APPLICATION = "application";
+
+    private static final String DEVICE = "device";
 
     @Test
 	public void testCleanUpKvKey() {
@@ -54,6 +60,72 @@ public class SecurityTest extends TestCase {
         prepareKvMap(false);
         Security.createNewUser(USER, PASS, true);
         Assert.assertFalse(Security.isUserActive(USER));
+    }
+
+    @Test
+    public void testCreateTokenOK() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        TokenResult tokenResult = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        Assert.assertTrue(tokenResult.isCheckOk());
+        Assert.assertTrue(StringUtils.isNotBlank(tokenResult.getNewToken()));
+    }
+
+    @Test
+    public void testCreateTokenInvalidPassword() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        for (int i = 0; i < 5; i++) {
+            TokenResult tokenResult = Security.createToken(USER, "abc", APPLICATION, DEVICE);
+            Assert.assertFalse(tokenResult.isCheckOk());
+            Assert.assertNull(tokenResult.getNewToken());
+        }
+        // user is blocked now
+        TokenResult tokenResultCorrectPassword = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        Assert.assertFalse(tokenResultCorrectPassword.isCheckOk());
+        Assert.assertNull(tokenResultCorrectPassword.getNewToken());
+    }
+
+    @Test
+    public void testCheckTokenOK() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        TokenResult tokenResultCheck = Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, false);
+        Assert.assertTrue(tokenResultCheck.isCheckOk());
+    }
+
+    @Test
+    public void testCheckTokenInvalidToken() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        Assert.assertTrue(tokenResultCreate.isCheckOk());
+        Assert.assertTrue(StringUtils.isNotBlank(tokenResultCreate.getNewToken()));
+        for (int i = 0; i < 5; i++) {
+            TokenResult tokenResultCheck =
+                Security.checkToken(USER, "myInvalidToken", APPLICATION, DEVICE, false);
+            Assert.assertFalse(tokenResultCheck.isCheckOk());
+            Assert.assertNull(tokenResultCheck.getNewToken());
+        }
+        // user is blocked now
+        TokenResult tokenResultCorrectToken =
+            Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, false);
+        Assert.assertFalse(tokenResultCorrectToken.isCheckOk());
+        Assert.assertNull(tokenResultCorrectToken.getNewToken());
+    }
+
+    @Test
+    public void testCheckTokenRefreshOK() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        TokenResult tokenResultRefresh = Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, true);
+        Assert.assertTrue(tokenResultRefresh.isCheckOk());
+        Assert.assertNotEquals(tokenResultCreate.getNewToken(), tokenResultRefresh.getNewToken());
+        TokenResult tokenResultCheckRefresh =
+            Security.checkToken(USER, tokenResultRefresh.getNewToken(), APPLICATION, DEVICE, false);
+        Assert.assertTrue(tokenResultCheckRefresh.isCheckOk());
     }
 
     private void prepareKvMap(boolean allowsLogin) {
