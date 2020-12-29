@@ -9,7 +9,6 @@ import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import javax.servlet.http.Cookie;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.io.IOUtils;
@@ -137,16 +136,10 @@ public class BasicApplication extends AbstractResponsible {
 				return;
 			}
 
-			String hash = Crypto.encryptLoginCredentials(user, pass1);
-			String secret = Security.cleanUpKvSubKey(UUID.randomUUID().toString());
-
-            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user, "FALSE", false);
-            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".pass", hash, false);
-            KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".loginTokenSecret", secret,
-                false);
+            Security.createNewUser(user, pass1, false);
 			KVMemoryMap.getInstance().save();
 
-			logger.info("User/Passwort generiert fuer: " + user);
+            logger.info("User/Passwort generiert fuer: {}", user);
 			model.lookupConversation().getMeldungen().add("Der Neuer Benutzer '" + user
 					+ "' wurde angelegt und muss nun noch freigeschaltet werden. Bitte hierfür den Besitzer der Anwendung kontaktieren.");
 		} else {
@@ -154,7 +147,6 @@ public class BasicApplication extends AbstractResponsible {
 		}
 
 		model.lookupConversation().setForwardCondition(Condition.LOGIN_FORMULAR);
-		return;
 	}
 
 	@Responsible(conditions = { Condition.LOGIN_CHANGE_PASS_FORM })

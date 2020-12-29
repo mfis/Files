@@ -1,12 +1,17 @@
 package mfi.files.logic;
 
+import org.junit.Assert;
 import org.junit.Test;
-
 import junit.framework.TestCase;
+import mfi.files.maps.KVMemoryMap;
 
 public class SecurityTest extends TestCase {
 
-	@Test
+    private static final String USER = "user";
+
+    private static final String PASS = "pass";
+
+    @Test
 	public void testCleanUpKvKey() {
 		assertEquals("a.b.c.d", Security.cleanUpKvKey("a.\nb.=c . d"));
 	}
@@ -29,4 +34,31 @@ public class SecurityTest extends TestCase {
 		assertEquals("ABCabc123.,-+ /<>(){}#*?@_", Security.cleanUpKvValue("ABCabc123.,-+ /<>(){}#*?@_"));
 		assertEquals("", Security.cleanUpKvValue("\\\n\r="));
 	}
+
+    @Test
+    public void testCreateUserInactive() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, false);
+        Assert.assertFalse(Security.isUserActive(USER));
+    }
+
+    @Test
+    public void testCreateUserActive() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        Assert.assertTrue(Security.isUserActive(USER));
+    }
+
+    @Test
+    public void testCreateUserActiveButLoginNotAllowed() {
+        prepareKvMap(false);
+        Security.createNewUser(USER, PASS, true);
+        Assert.assertFalse(Security.isUserActive(USER));
+    }
+
+    private void prepareKvMap(boolean allowsLogin) {
+        KVMemoryMap.getInstance().reset();
+        KVMemoryMap.getInstance().writeKeyValue("application.allowsLogin", Boolean.toString(allowsLogin), true);
+    }
+
 }

@@ -347,6 +347,16 @@ public class Security {
         return false;
     }
 
+    public static void createNewUser(String user, String pass, boolean userActive) {
+
+        String hash = Crypto.encryptLoginCredentials(user, pass);
+        String secret = Security.cleanUpKvSubKey(UUID.randomUUID().toString());
+
+        KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user, Boolean.toString(userActive), false);
+        KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVDB_PASS_IDENTIFIER, hash, false);
+        KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".loginTokenSecret", secret, false);
+    }
+
     public static boolean checkUserCredentials(String user, String pass) {
 
         user = cleanUpKvSubKey(user);
