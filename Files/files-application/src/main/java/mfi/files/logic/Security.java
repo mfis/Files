@@ -35,8 +35,6 @@ public class Security {
 
     private static final String ANMELDEDATEN_SIND_FEHLERHAFT = "Anmeldedaten sind fehlerhaft.";
 
-    private static final String KVDB_PASS_IDENTIFIER = ".pass";
-
     private static final String SESSION_COOKIE_NAME = "JSESSIONID";
 
     private static final String LOGIN_COOKIE_NAME = "FILESLOGIN";
@@ -199,7 +197,8 @@ public class Security {
             // login
             boolean wasAlreadyAuthenticated = model.isUserAuthenticated();
             boolean authenticated = authenticateUser(model, userFromCookie, null, KVMemoryMap.getInstance()
-                .readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + userFromCookie + KVDB_PASS_IDENTIFIER), parameters);
+                .readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + userFromCookie + KVMemoryMap.KVDB_PASS_IDENTIFIER),
+                parameters);
             if (authenticated) {
                 if (!wasAlreadyAuthenticated) {
                     // forwarding to standard condition
@@ -330,7 +329,8 @@ public class Security {
                 passHash = Crypto.encryptLoginCredentials(user, pass);
             }
             if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user) && StringUtils.equals(
-                KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVDB_PASS_IDENTIFIER),
+                KVMemoryMap.getInstance()
+                    .readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVMemoryMap.KVDB_PASS_IDENTIFIER),
                 passHash)) {
                 if (!StringUtils.equals(model.getUser(), user)) {
                     model.setUser(user);
@@ -353,7 +353,8 @@ public class Security {
         String secret = Security.cleanUpKvSubKey(UUID.randomUUID().toString());
 
         KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user, Boolean.toString(userActive), false);
-        KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVDB_PASS_IDENTIFIER, hash, false);
+        KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVMemoryMap.KVDB_PASS_IDENTIFIER,
+            hash, false);
         KVMemoryMap.getInstance().writeKeyValue(KVMemoryMap.KVDB_USER_IDENTIFIER + user + ".loginTokenSecret", secret, false);
     }
 
@@ -376,9 +377,11 @@ public class Security {
         } else {
             String passHash = Crypto.encryptLoginCredentials(user, pass);
             if (KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user)
-                && KVMemoryMap.getInstance().containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVDB_PASS_IDENTIFIER)
+                && KVMemoryMap.getInstance()
+                    .containsKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVMemoryMap.KVDB_PASS_IDENTIFIER)
                 && StringUtils.equals(
-                    KVMemoryMap.getInstance().readValueFromKey(KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVDB_PASS_IDENTIFIER),
+                    KVMemoryMap.getInstance().readValueFromKey(
+                        KVMemoryMap.KVDB_USER_IDENTIFIER + user + KVMemoryMap.KVDB_PASS_IDENTIFIER),
                     passHash)) {
                 return true;
             } else {
@@ -483,7 +486,9 @@ public class Security {
                 if (refresh) {
                     token.refreshValue();
                     tokenToReturn = token.toKvDbValue();
-                    String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
+                    String key =
+                        KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
+                    // + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER;
                     KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
                     logger.info("refreshed token value: app:{} dev:{} token:{}", application, device, token);
                 }

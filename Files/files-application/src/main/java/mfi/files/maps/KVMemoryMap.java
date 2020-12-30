@@ -7,12 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import mfi.files.io.FilesFile;
 import mfi.files.logic.Crypto;
 import mfi.files.logic.Security;
@@ -30,6 +28,8 @@ public class KVMemoryMap {
 	public static final String KVDB_KEY_BLACKLIST = "temporary.month.login.blacklist.";
 	public static final String KVDB_KEY_LOGINTOKEN = "xtoken.login.";
 	public static final String KVDB_USER_IDENTIFIER = "user.";
+    public static final String KVDB_PASS_IDENTIFIER = ".pass";
+    public static final String KVDB_NEW_TOKEN_IDENTIFIER = ".new";
 
 	public static final String PREFIX_TEMPORARY = "temporary.";
 	public static final String PREFIX_CRYPTO_ENTRY_ENC = "secureentry_";
