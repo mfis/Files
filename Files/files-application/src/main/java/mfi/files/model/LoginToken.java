@@ -86,8 +86,12 @@ public class LoginToken implements Serializable {
 
 	private boolean checkValue(String user, String application, String device) {
 		String key = KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
-		String actualValue = KVMemoryMap.getInstance().readValueFromKey(key);
-		return StringUtils.isNotBlank(actualValue) && StringUtils.equals(actualValue, toKvDbValue());
+        String actualValueNew = KVMemoryMap.getInstance().readValueFromKey(key + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER);
+        if (StringUtils.isNotBlank(actualValueNew) && StringUtils.equals(actualValueNew, toKvDbValue())) {
+            return true;
+        }
+        String actualValueOld = KVMemoryMap.getInstance().readValueFromKey(key);
+        return StringUtils.isNotBlank(actualValueOld) && StringUtils.equals(actualValueOld, toKvDbValue());
 	}
 
 	private boolean checkUserSecretHash(String user) {

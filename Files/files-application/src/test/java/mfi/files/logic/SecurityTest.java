@@ -17,6 +17,8 @@ public class SecurityTest extends TestCase {
 
     private static final String DEVICE = "device";
 
+    private static final String TOKEN_KEY = KVMemoryMap.KVDB_KEY_LOGINTOKEN + USER + "." + APPLICATION + "." + DEVICE;
+
     @Test
 	public void testCleanUpKvKey() {
 		assertEquals("a.b.c.d", Security.cleanUpKvKey("a.\nb.=c . d"));
@@ -122,10 +124,33 @@ public class SecurityTest extends TestCase {
         TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
         TokenResult tokenResultRefresh = Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, true);
         Assert.assertTrue(tokenResultRefresh.isCheckOk());
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER));
         Assert.assertNotEquals(tokenResultCreate.getNewToken(), tokenResultRefresh.getNewToken());
         TokenResult tokenResultCheckRefresh =
             Security.checkToken(USER, tokenResultRefresh.getNewToken(), APPLICATION, DEVICE, false);
         Assert.assertTrue(tokenResultCheckRefresh.isCheckOk());
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertEquals(tokenResultRefresh.getNewToken(), KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER));
+    }
+
+    @Test
+    public void testCheckTokenRefreshCkeckWithUncommitedValue() {
+        prepareKvMap(true);
+        Security.createNewUser(USER, PASS, true);
+        TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
+        TokenResult tokenResultRefresh = Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, true);
+        Assert.assertTrue(tokenResultRefresh.isCheckOk());
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER));
+        Assert.assertNotEquals(tokenResultCreate.getNewToken(), tokenResultRefresh.getNewToken());
+        TokenResult tokenResultCheckRefresh =
+            Security.checkToken(USER, tokenResultCreate.getNewToken(), APPLICATION, DEVICE, false);
+        Assert.assertTrue(tokenResultCheckRefresh.isCheckOk());
+        Assert.assertNotNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertEquals(tokenResultCreate.getNewToken(), KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY));
+        Assert.assertNull(KVMemoryMap.getInstance().readValueFromKey(TOKEN_KEY + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER));
     }
 
     private void prepareKvMap(boolean allowsLogin) {

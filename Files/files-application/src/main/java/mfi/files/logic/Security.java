@@ -482,15 +482,21 @@ public class Security {
         } else {
             LoginToken token = LoginToken.fromCombinedValue(tokenToCheck);
             if (token != null && token.checkToken(user, application, device)) {
+                logger.info("checked token value ok: app:{} dev:{} token:{}", application, device, token);
                 String tokenToReturn = null;
+                String key =
+                        KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
+                if (isNewRefreshedToken(token, key)) {
+                    // commit new value to standard value
+                    KVMemoryMap.getInstance().writeKeyValue(key, token.toKvDbValue(), true);
+                }
                 if (refresh) {
                     token.refreshValue();
                     tokenToReturn = token.toKvDbValue();
-                    String key =
-                        KVMemoryMap.KVDB_KEY_LOGINTOKEN + user + "." + application + "." + device;
-                    // + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER;
-                    KVMemoryMap.getInstance().writeKeyValue(key, tokenToReturn, true);
+                    KVMemoryMap.getInstance().writeKeyValue(key + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER, tokenToReturn, true);
                     logger.info("refreshed token value: app:{} dev:{} token:{}", application, device, token);
+                } else if (KVMemoryMap.getInstance().readValueFromKey(key + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER) != null) {
+                    KVMemoryMap.getInstance().deleteKey(key + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER);
                 }
                 return new TokenResult(true, tokenToReturn);
             } else {
@@ -571,6 +577,11 @@ public class Security {
         if (value == LIMIT_PUSH_2) {
             Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCount);
         }
+    }
+
+    private static boolean isNewRefreshedToken(LoginToken token, String key) {
+        return StringUtils.equals(KVMemoryMap.getInstance().readValueFromKey(key + KVMemoryMap.KVDB_NEW_TOKEN_IDENTIFIER),
+            token.toKvDbValue());
     }
 
     private static boolean isBlocked(String itemToCheck) {
