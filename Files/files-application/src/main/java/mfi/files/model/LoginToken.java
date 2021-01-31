@@ -73,7 +73,7 @@ public class LoginToken implements Serializable {
     @Override
     public String toString() {
         String tsString = timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        return StringUtils.join(new String[] {user, tsString, userSecretHash}, SEPARATOR_CHAR);
+        return StringUtils.join(new String[] {user, tsString, userSecretHash, StringUtils.left(value, 10)}, SEPARATOR_CHAR);
     }
 
 	public boolean checkToken(String user, String application, String device) {
