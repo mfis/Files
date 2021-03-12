@@ -41,9 +41,11 @@ public class Security {
 
     private static final String BLACKLIST_ALLOWED_APPLICATION = "NotAllowedApplication";
 
-    private static final long LIMIT_BLOCKED = 3;
+    private static final long LIMIT_WARNING_MSG = 3;
 
-    private static final long LIMIT_PUSH_2 = 40;
+    private static final long LIMIT_BLOCKED = 6;
+
+    private static final long LIMIT_PUSH_HIGH_ATTEMPTS = 20;
 
     private static final Logger logger = LoggerFactory.getLogger(Security.class);
 
@@ -571,10 +573,13 @@ public class Security {
         KVMemoryMap.getInstance().writeKeyValue(key, String.valueOf(value), true);
         logger.warn("Schreibe Blacklist fuer {} = {}", key, value);
 
+        if (value == LIMIT_WARNING_MSG) {
+            Hilfsklasse.sendPushMessage("Warning - " + LIMIT_WARNING_MSG + " login attempts: " + itemToCount);
+        }
         if (value == LIMIT_BLOCKED) {
             Hilfsklasse.sendPushMessage("Blocked key: " + itemToCount);
         }
-        if (value == LIMIT_PUSH_2) {
+        if (value == LIMIT_PUSH_HIGH_ATTEMPTS) {
             Hilfsklasse.sendPushMessage("High login attempt count: " + itemToCount);
         }
     }
