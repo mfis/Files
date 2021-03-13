@@ -44,6 +44,7 @@ public class FilesEventServlet {
 			conversationID = Integer.parseInt(conv);
 		}
 
+        response.setHeader("Referrer-Policy", "no-referrer");
 		response.setContentType("text/event-stream");
 		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 

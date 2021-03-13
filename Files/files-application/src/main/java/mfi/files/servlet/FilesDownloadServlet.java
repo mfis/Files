@@ -180,6 +180,7 @@ public class FilesDownloadServlet {
 		}
 
 		response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Referrer-Policy", "no-referrer");
 		response.setHeader("Accept-Ranges", "none");
 
 		if (forceDownload) {

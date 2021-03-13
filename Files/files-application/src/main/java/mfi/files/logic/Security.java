@@ -242,9 +242,7 @@ public class Security {
             model.setLoginCookieID(token);
             logger.info("Files created token value : {}", token);
 
-            Cookie cookie = new Cookie(LOGIN_COOKIE_NAME, token.toKvDbValue());
-            cookie.setMaxAge(60 * 60 * 24 * 92);
-            cookie.setHttpOnly(true);
+            Cookie cookie = buildCookie(token);
             model.lookupConversation().getCookiesToWriteToResponse().put(LOGIN_COOKIE_NAME, cookie);
         }
     }
@@ -278,9 +276,7 @@ public class Security {
 
         model.setLoginCookieID(token);
 
-        Cookie cookie = new Cookie(LOGIN_COOKIE_NAME, token.toKvDbValue());
-        cookie.setMaxAge(60 * 60 * 24 * 92);
-        cookie.setHttpOnly(true);
+        Cookie cookie = buildCookie(token);
         model.lookupConversation().getCookiesToWriteToResponse().put(LOGIN_COOKIE_NAME, cookie);
     }
 
@@ -305,6 +301,16 @@ public class Security {
         Cookie sessioncookie = new Cookie(SESSION_COOKIE_NAME, StringUtils.EMPTY);
         sessioncookie.setMaxAge(0);
         model.lookupConversation().getCookiesToWriteToResponse().put(SESSION_COOKIE_NAME, sessioncookie);
+    }
+
+    private static Cookie buildCookie(LoginToken token) {
+        
+        Cookie cookie = new Cookie(LOGIN_COOKIE_NAME, token.toKvDbValue());
+        cookie.setMaxAge(60 * 60 * 24 * 92);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(
+            !StringUtils.contains(KVMemoryMap.getInstance().readValueFromKey("application.environment.name"), "Test"));
+        return cookie;
     }
 
     public static boolean authenticateUser(Model model, String user, String pass, String passHash,

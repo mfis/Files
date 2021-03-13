@@ -58,6 +58,7 @@ public class FilesAjaxServlet {
 			request.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 			response.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 			response.setHeader("Cache-Control", "no-cache");
+            response.setHeader("Referrer-Policy", "no-referrer");
 
 			StringBuilder sb = new StringBuilder();
 			boolean isXmlResponse = false;

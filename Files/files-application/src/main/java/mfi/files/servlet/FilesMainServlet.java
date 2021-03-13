@@ -28,13 +28,14 @@ public class FilesMainServlet {
 
 	private static Log logger = LogFactory.getLog(FilesMainServlet.class);
 
-	@RequestMapping("/") // NOSONAR
+    @RequestMapping("/")
 	public void requestVerarbeiten(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
 		response.setContentType(ServletHelper.CONTENT_TYPE_HTML);
 		request.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 		response.setCharacterEncoding(ServletHelper.STRING_ENCODING_UTF8);
 		response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Referrer-Policy", "no-referrer");
 
 		ThreadLocalHelper.setConversationID(request.getParameter(HTMLUtils.CONVERSATION));
 

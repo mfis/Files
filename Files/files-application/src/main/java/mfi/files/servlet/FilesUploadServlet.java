@@ -38,6 +38,7 @@ public class FilesUploadServlet {
 		HttpSession session = request.getSession(false);
 		Model model = null;
 
+        response.setHeader("Referrer-Policy", "no-referrer");
 		response.setContentType("text/plain");
 		response.setCharacterEncoding("UTF-8");
 		boolean formTerminator = false;
