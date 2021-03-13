@@ -77,7 +77,7 @@ public class SecurityTest extends TestCase {
     public void testCreateTokenInvalidPassword() {
         prepareKvMap(true);
         Security.createNewUser(USER, PASS, true);
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < Security.LIMIT_BLOCKED; i++) {
             TokenResult tokenResult = Security.createToken(USER, "abc", APPLICATION, DEVICE);
             Assert.assertFalse(tokenResult.isCheckOk());
             Assert.assertNull(tokenResult.getNewToken());
@@ -104,7 +104,7 @@ public class SecurityTest extends TestCase {
         TokenResult tokenResultCreate = Security.createToken(USER, PASS, APPLICATION, DEVICE);
         Assert.assertTrue(tokenResultCreate.isCheckOk());
         Assert.assertTrue(StringUtils.isNotBlank(tokenResultCreate.getNewToken()));
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < Security.LIMIT_BLOCKED; i++) {
             TokenResult tokenResultCheck =
                 Security.checkToken(USER, "myInvalidToken", APPLICATION, DEVICE, false);
             Assert.assertFalse(tokenResultCheck.isCheckOk());

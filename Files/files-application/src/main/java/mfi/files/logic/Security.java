@@ -43,7 +43,7 @@ public class Security {
 
     private static final long LIMIT_WARNING_MSG = 3;
 
-    private static final long LIMIT_BLOCKED = 6;
+    protected static final long LIMIT_BLOCKED = 6;
 
     private static final long LIMIT_PUSH_HIGH_ATTEMPTS = 20;
 
